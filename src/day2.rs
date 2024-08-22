@@ -135,17 +135,64 @@ fn examples1() {
     assert_eq!(is_possible(&game5),  true);
 }
 
+use std::cmp;
+
+// get the minimum bag that makes this game possible
+fn get_minimum_bag(game:&Game) -> Set {
+    let mut bag=Set{red:0, green:0, blue:0};
+    for set in &game.sets {
+        bag.red   = cmp::max(bag.red,   set.red);
+        bag.green = cmp::max(bag.green, set.green);
+        bag.blue  = cmp::max(bag.blue,  set.blue);
+    }
+
+    bag
+}
+
+fn get_power_of_bag(set:&Set) -> u32 {
+    set.red * set.green * set.blue
+}
+
+#[test]
+fn examples2() {
+    let game1 = parse_game("Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green");
+    let bag1 = get_minimum_bag(&game1);
+    assert_eq!(bag1, Set{red:4, green:2, blue: 6});
+    assert_eq!(get_power_of_bag(&bag1), 48);
+
+    let game2 = parse_game("Game 2: 1 blue, 2 green; 3 green, 4 blue, 1 red; 1 green, 1 blue");
+    let bag2 = get_minimum_bag(&game2);
+    assert_eq!(bag2, Set{red:1, green:3, blue: 4});
+    assert_eq!(get_power_of_bag(&bag2), 12);
+
+    let game3 = parse_game("Game 3: 8 green, 6 blue, 20 red; 5 blue, 4 red, 13 green; 5 green, 1 red");
+    let bag3 = get_minimum_bag(&game3);
+    assert_eq!(bag3, Set{red:20, green:13, blue: 6});
+    assert_eq!(get_power_of_bag(&bag3), 1560);
+
+    let game4 = parse_game("Game 4: 1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red");
+    let bag4 = get_minimum_bag(&game4);
+    assert_eq!(bag4, Set{red:14, green:3, blue: 15});
+    assert_eq!(get_power_of_bag(&bag4), 630);
+
+    let game5 = parse_game("Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green");
+    let bag5 = get_minimum_bag(&game5);
+    assert_eq!(bag5, Set{red:6, green:3, blue: 2});
+    assert_eq!(get_power_of_bag(&bag5), 36);
+}
+
 use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
 
-pub fn part1() {
+pub fn part1and2() {
     let file = File::open("data/day2.input").expect("Could not open data/day2.input");
     let reader = BufReader::new(file);
 
     let mut sum_of_indices = 0;
     let mut cnt_of_possible_games = 0;
     let mut cnt_of_games = 0;
+    let mut sum_of_power_of_games = 0;
     for line in reader.lines() {
         let linetext = &line.expect("line failure");
         let game = parse_game(linetext);
@@ -153,8 +200,13 @@ pub fn part1() {
             sum_of_indices += game.index;
             cnt_of_possible_games += 1;
         }
+        let minimum_bag = get_minimum_bag(&game);
+        sum_of_power_of_games += get_power_of_bag(&minimum_bag);
         cnt_of_games += 1;
     }
 
-    println!("Day 2: {} of {} games possible. Sum of indices = {}", cnt_of_possible_games, cnt_of_games, sum_of_indices);
+    println!("Day 2: {} of {} games possible. Sum of indices = {}. Sum of power of minimal bags = {}.",
+      cnt_of_possible_games, cnt_of_games,
+      sum_of_indices,
+      sum_of_power_of_games);
 }
