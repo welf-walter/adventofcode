@@ -143,6 +143,30 @@ fn get_adjacencies(engi: &EngineSchematic) -> Adjacencies {
     adj
 }
 
+#[derive(Debug)]
+#[derive(PartialEq)]
+struct Gear {
+    part_number1:u32,
+    part_number2:u32,
+    ratio:u32
+}
+
+fn get_gears(engi: &EngineSchematic) -> Vec<Gear> {
+    let mut gears = Vec::new();
+    let adj = get_adjacencies(&engi);
+    for (_symbol, numberlist) in adj.map.iter() {
+        if numberlist.len() == 2 {
+            let part_number1 = numberlist.get(0).unwrap().value;
+            let part_number2 = numberlist.get(1).unwrap().value;
+            gears.push(Gear{
+                part_number1:part_number1,
+                part_number2:part_number2,
+                ratio:part_number1 * part_number2});
+        }
+    }
+    gears
+}
+
 #[test]
 fn examples2() {
     let engi = EngineSchematic{
@@ -175,6 +199,10 @@ fn examples2() {
     assert_eq!(sym3nums.len(), 1);
     assert_eq!(sym3nums.get(0).unwrap().value, 617);
 
+    let gears = get_gears(&engi);
+    assert_eq!(gears.len(), 2);
+    assert!(gears.contains(&Gear{part_number1:467, part_number2:  35, ratio: 16345}));
+    assert!(gears.contains(&Gear{part_number1:755, part_number2: 598, ratio: 451490}));
 }
 
 
@@ -184,7 +212,7 @@ use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
 
-pub fn part1() {
+pub fn part1and2() {
     let file = File::open("data/day3.input").expect("Could not open data/day3.input");
     let reader = BufReader::new(file);
 
@@ -205,4 +233,17 @@ pub fn part1() {
     println!("Day 3: {} of {} numbers are parts. Their sum = {}.",
       cnt_of_part_numbers, cnt_of_numbers,
       sum_of_part_numbers);
+
+    let gears = get_gears(&engi);
+    let mut sum_of_gear_ratio = 0;
+    let mut cnt_of_gears = 0;
+
+    for gear in gears {
+        sum_of_gear_ratio += gear.ratio;
+        cnt_of_gears += 1;
+    }
+    println!("       {} gears exist, the sum of their ratios is {}.",
+      cnt_of_gears,
+      sum_of_gear_ratio);
+
 }
