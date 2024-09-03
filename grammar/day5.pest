@@ -1,0 +1,34 @@
+// test on: https://pest.rs/#editor
+
+number = { ASCII_DIGIT + }
+
+list_of_triples = { ( number ~ " " ~ number ~ " " ~ number ) ~ ( NEWLINE ~ number ~ " " ~ number ~ " " ~ number ) * }
+
+seeds = { "seeds" ~ ":" ~ (" " ~ number ) + }
+
+seed_to_soil = { "seed-to-soil map:\n" ~ list_of_triples}
+
+soil_to_fertilizer = { "soil-to-fertilizer map:\n" ~ list_of_triples}
+
+fertilizer_to_water = { "fertilizer-to-water map:\n" ~ list_of_triples}
+
+water_to_light = { "water-to-light map:\n" ~ list_of_triples}
+
+light_to_temperature = { "light-to-temperature map:\n" ~ list_of_triples}
+
+temperature_to_humidity = { "temperature-to-humidity map:\n" ~ list_of_triples}
+
+humidity_to_location = { "humidity-to-location map:\n" ~ list_of_triples}
+
+file = {
+    SOI ~
+    seeds ~ NEWLINE + ~
+    seed_to_soil ~ NEWLINE + ~
+            soil_to_fertilizer ~ NEWLINE + ~
+                    fertilizer_to_water ~ NEWLINE + ~
+                                  water_to_light ~ NEWLINE + ~
+                                           light_to_temperature ~ NEWLINE + ~
+                                                    temperature_to_humidity ~ NEWLINE + ~
+                                                                   humidity_to_location ~
+    EOI 
+}
