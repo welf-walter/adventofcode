@@ -19,6 +19,104 @@ fn test_parse() {
 
 }
 
+#[derive(PartialEq)]
+#[derive(Debug)]
+enum AlmanacType {
+    Seed(u32),
+    Soil(u32),
+    Fertilizer(u32),
+    Water(u32),
+    Light(u32),
+    Temperature(u32),
+    Humidity(u32),
+    Location(u32)
+}
+
+use AlmanacType::*;
+
+trait AlmanacTypeTrait {
+    fn to_u32(&self) -> u32;
+    fn from_u32(&self, value:u32) -> Self;
+}
+
+impl AlmanacTypeTrait for AlmanacType {
+    fn to_u32(&self) -> u32 {
+        match self {
+            Seed(value) => *value,
+            Soil(value) => *value,
+            Fertilizer(value) => *value,
+            Water(value) => *value,
+            Light(value) => *value,
+            Temperature(value) => *value,
+            Humidity(value) => *value,
+            Location(value) => *value
+        }
+    }
+
+    // not nice: I don't really need self, I would only need its type
+    fn from_u32(&self, value: u32) -> Self {
+        match self {
+            Seed(_) => Seed(value),
+            Soil(_) => Soil(value),
+            Fertilizer(_) => Fertilizer(value),
+            Water(_) => Water(value),
+            Light(_) => Light(value),
+            Temperature(_) => Temperature(value),
+            Humidity(_) => Humidity(value),
+            Location(_) => Location(value)
+        }
+    }
+}
+
+struct MappingRange<Destination:AlmanacTypeTrait, Source:AlmanacTypeTrait> {
+//struct MappingRange<Destination, Source> {
+    destination_range_start: Destination,
+    source_range_start: Source,
+    range_length: u32
+}
+
+impl<Destination:AlmanacTypeTrait, Source:AlmanacTypeTrait> MappingRange<Destination, Source> {
+    fn is_source_in_range(&self, source:Source) -> bool {
+        source.to_u32() >= self.source_range_start.to_u32()
+        &&
+        source.to_u32() < self.source_range_start.to_u32() + self.range_length
+    }
+
+    fn convert(&self, source:Source) -> Destination {
+        self.destination_range_start. // <-- uuh. ugly! :(
+        from_u32(
+            self.destination_range_start.to_u32() +
+            ( source.to_u32() - self.source_range_start.to_u32() ))
+    }
+}
+
+#[test]
+fn test_mapping_range() {
+    //let range = MappingRange<Seed, Soil>{ map:vec![50, 98, 2]};
+    let range = MappingRange{
+        destination_range_start: Soil(50),
+        source_range_start: Seed(98),
+        range_length: 2};
+    assert!(!range.is_source_in_range(Seed( 97)));
+    assert!( range.is_source_in_range(Seed( 98)));
+    assert!( range.is_source_in_range(Seed( 99)));
+    assert!(!range.is_source_in_range(Seed(100)));
+
+    assert_eq!(range.convert(Seed(98)), Soil(50));
+    assert_eq!(range.convert(Seed(99)), Soil(51));
+}
+/*
+struct Source_to_Destination_map<X:AlmanacType, Y:AlmanacType> {
+    mapping_range_list:Vector<MappingRange>
+}
+
+fn convert<Source:AlmanacType, Destination:AlmanacType>(source:Source, map: &Source_to_Destination_map) {
+    for range in map.mapping_range_list {
+        if is_source_in_range()
+    }
+}
+*/
+
 #[test]
 fn test_example1() {
     let input = [
