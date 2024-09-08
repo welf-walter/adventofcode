@@ -40,7 +40,7 @@ struct Temperature(u32);
 #[derive(PartialEq,Debug,Clone,Copy)]
 struct Humidity(u32);
 
-#[derive(PartialEq,Debug,Clone,Copy)]
+#[derive(PartialEq,Debug,Clone,Copy,Eq,PartialOrd,Ord)]
 struct Location(u32);
 
 trait AlmanacTypeTrait {
@@ -131,6 +131,13 @@ impl<Source:AlmanacTypeTrait+Copy, Destination:AlmanacTypeTrait+Copy> SourceToDe
     fn new() -> Self {
         SourceToDestinationMap { mapping_range_list:Vec::new() }
     }
+    fn add_range(&mut self, source_range_start: Source, destination_range_start: Destination, range_length: u32) -> () {
+        self.mapping_range_list.push(MappingRange {
+            source_range_start : source_range_start,
+            destination_range_start : destination_range_start,
+            range_length : range_length
+        });
+    }
     fn convert(&self, source:Source) -> Destination {
         for range in &self.mapping_range_list {
             if range.is_source_in_range(source) {
@@ -139,6 +146,9 @@ impl<Source:AlmanacTypeTrait+Copy, Destination:AlmanacTypeTrait+Copy> SourceToDe
         }
         let sourceval = source.to_u32();
         return Destination::from_u32(sourceval);
+    }
+    fn convert_vector(&self, source:&Vec<Source>) -> Vec<Destination> {
+        source.into_iter().map(|source| self.convert(*source)).collect()
     }
 }
 
@@ -172,6 +182,31 @@ impl Almanac {
 
 use pest::iterators::Pair;
 
+fn build_source_destination_map<Source:AlmanacTypeTrait+Copy, Destination:AlmanacTypeTrait+Copy>
+    (mapping_rule:Pair<'_, Rule>) -> SourceToDestinationMap<Source, Destination> {
+        let mut sd_map = SourceToDestinationMap::new();
+        for list_of_triples in mapping_rule.into_inner() {
+            match list_of_triples.as_rule() {
+                Rule::list_of_triples => {
+                    let mut number_iter = list_of_triples.into_inner();
+                    while let Some(destination_rule) = number_iter.next() {
+                        let destination_value = destination_rule.as_str().parse::<u32>().unwrap();
+
+                        let source_rule = number_iter.next().unwrap();
+                        let source_value = source_rule.as_str().parse::<u32>().unwrap();
+
+                        let range_rule = number_iter.next().unwrap();
+                        let range_value = range_rule.as_str().parse::<u32>().unwrap();
+
+                        sd_map.add_range(Source::from_u32(source_value), Destination::from_u32(destination_value), range_value);
+                    }
+                }
+                _ => { println!("Unexpected {}", list_of_triples); }
+            }
+        }
+        sd_map
+}
+
 fn build_almanac(file_rule:Pair<'_, Rule>) -> Almanac {
     let mut almanac:Almanac = Almanac::new();
     for almanac_entry in file_rule.into_inner() {
@@ -186,32 +221,30 @@ fn build_almanac(file_rule:Pair<'_, Rule>) -> Almanac {
                         _ => { println!("Unexpected {}", number); }
                     }
                 }
-
-                println!("seeds");
             },
             Rule::seed_to_soil => {
-                println!("seed_to_soil");
+                almanac.seed_to_soil = build_source_destination_map(almanac_entry);
             },
             Rule::soil_to_fertilizer => {
-                println!("soil_to_fertilizer");
+                almanac.soil_to_fertilizer = build_source_destination_map(almanac_entry);
             },
             Rule::fertilizer_to_water => {
-                println!("fertilizer_to_water");
+                almanac.fertilizer_to_water = build_source_destination_map(almanac_entry);
             },
             Rule::water_to_light => {
-                println!("water_to_light");
+                almanac.water_to_light = build_source_destination_map(almanac_entry);
             },
             Rule::light_to_temperature => {
-                println!("light_to_temperature");
+                almanac.light_to_temperature = build_source_destination_map(almanac_entry);
             },
             Rule::temperature_to_humidity => {
-                println!("temperature_to_humidity");
+                almanac.temperature_to_humidity = build_source_destination_map(almanac_entry);
             },
             Rule::humidity_to_location => {
-                println!("humidity_to_location");
+                almanac.humidity_to_location = build_source_destination_map(almanac_entry);
             },
             Rule::EOI => (),
-            _ => unreachable!(),            
+            _ => unreachable!(),
         }
     }
     almanac
@@ -260,6 +293,38 @@ fn test_example1() {
     let almanac = build_almanac(file_rule);
 
     assert_eq!(almanac.seeds, vec![Seed(79), Seed(14), Seed(55), Seed(13)]);
+    assert_eq!(almanac.seed_to_soil.mapping_range_list.len(), 2);
+    assert_eq!(almanac.soil_to_fertilizer.mapping_range_list.len(), 3);
+    assert_eq!(almanac.fertilizer_to_water.mapping_range_list.len(), 4);
+    assert_eq!(almanac.water_to_light.mapping_range_list.len(), 2);
+    assert_eq!(almanac.light_to_temperature.mapping_range_list.len(), 3);
+    assert_eq!(almanac.temperature_to_humidity.mapping_range_list.len(), 2);
+    assert_eq!(almanac.humidity_to_location.mapping_range_list.len(), 2);
+
+    let soils = almanac.seed_to_soil.convert_vector(&almanac.seeds);
+    assert_eq!(soils, vec![Soil(81), Soil(14), Soil(57), Soil(13)]);
+
+    let fertilizers = almanac.soil_to_fertilizer.convert_vector(&soils);
+    assert_eq!(fertilizers, vec![Fertilizer(81), Fertilizer(53), Fertilizer(57), Fertilizer(52)]);
+
+    let water = almanac.fertilizer_to_water.convert_vector(&fertilizers);
+    assert_eq!(water, vec![Water(81), Water(49), Water(53), Water(41)]);
+
+    let lights = almanac.water_to_light.convert_vector(&water);
+    assert_eq!(lights, vec![Light(74), Light(42), Light(46), Light(34)]);
+
+    let temperatures = almanac.light_to_temperature.convert_vector(&lights);
+    assert_eq!(temperatures, vec![Temperature(78), Temperature(42), Temperature(82), Temperature(34)]);
+
+    let humidities = almanac.temperature_to_humidity.convert_vector(&temperatures);
+    assert_eq!(humidities, vec![Humidity(78), Humidity(43), Humidity(82), Humidity(35)]);
+
+    let locations = almanac.humidity_to_location.convert_vector(&humidities);
+    assert_eq!(locations, vec![Location(82), Location(43), Location(86), Location(35)]);
+
+    let lowest_location = locations.iter().min().unwrap();
+    assert_eq!(lowest_location, &Location(35));
+
 }
 
 use std::fs::File;
@@ -272,8 +337,11 @@ pub fn part1() {
     let reader = BufReader::new(file);
 
     let lines:Vec<String> = reader.lines().map( |line| line.unwrap() ).collect();
-    let parsed = Day5Parser::parse(Rule::file, &lines.join("\n")).unwrap();
+    let concat_input = lines.join("\n");
+    let mut parsed = Day5Parser::parse(Rule::file, &concat_input).unwrap();
+    let file_rule = parsed.next().unwrap();
+    let almanac = build_almanac(file_rule);
 
-    println!("Parsing was successful");
+    println!("Day 5: No idea yet of solution ;-)");
 }
 
