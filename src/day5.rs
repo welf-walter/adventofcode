@@ -20,91 +20,91 @@ fn test_parse() {
 }
 
 #[derive(PartialEq,Debug,Clone,Copy)]
-struct Seed(u32);
+struct Seed(u64);
 
 #[derive(PartialEq,Debug,Clone,Copy)]
-struct Soil(u32);
+struct Soil(u64);
 
 #[derive(PartialEq,Debug,Clone,Copy)]
-struct Fertilizer(u32);
+struct Fertilizer(u64);
 
 #[derive(PartialEq,Debug,Clone,Copy)]
-struct Water(u32);
+struct Water(u64);
 
 #[derive(PartialEq,Debug,Clone,Copy)]
-struct Light(u32);
+struct Light(u64);
 
 #[derive(PartialEq,Debug,Clone,Copy)]
-struct Temperature(u32);
+struct Temperature(u64);
 
 #[derive(PartialEq,Debug,Clone,Copy)]
-struct Humidity(u32);
+struct Humidity(u64);
 
 #[derive(PartialEq,Debug,Clone,Copy,Eq,PartialOrd,Ord)]
-struct Location(u32);
+struct Location(u64);
 
 trait AlmanacTypeTrait {
-    fn to_u32(&self) -> u32;
-    fn from_u32(value:u32) -> Self;
+    fn to_u64(&self) -> u64;
+    fn from_u64(value:u64) -> Self;
 }
 
 impl AlmanacTypeTrait for Seed {
-    fn to_u32(&self) -> u32 { self.0 }
-    fn from_u32(value:u32) -> Self { Self(value )}
+    fn to_u64(&self) -> u64 { self.0 }
+    fn from_u64(value:u64) -> Self { Self(value )}
 }
 
 impl AlmanacTypeTrait for Soil {
-    fn to_u32(&self) -> u32 { self.0 }
-    fn from_u32(value:u32) -> Self { Self(value )}
+    fn to_u64(&self) -> u64 { self.0 }
+    fn from_u64(value:u64) -> Self { Self(value )}
 }
 
 impl AlmanacTypeTrait for Fertilizer {
-    fn to_u32(&self) -> u32 { self.0 }
-    fn from_u32(value:u32) -> Self { Self(value )}
+    fn to_u64(&self) -> u64 { self.0 }
+    fn from_u64(value:u64) -> Self { Self(value )}
 }
 
 impl AlmanacTypeTrait for Water {
-    fn to_u32(&self) -> u32 { self.0 }
-    fn from_u32(value:u32) -> Self { Self(value )}
+    fn to_u64(&self) -> u64 { self.0 }
+    fn from_u64(value:u64) -> Self { Self(value )}
 }
 
 impl AlmanacTypeTrait for Light {
-    fn to_u32(&self) -> u32 { self.0 }
-    fn from_u32(value:u32) -> Self { Self(value )}
+    fn to_u64(&self) -> u64 { self.0 }
+    fn from_u64(value:u64) -> Self { Self(value )}
 }
 
 impl AlmanacTypeTrait for Temperature {
-    fn to_u32(&self) -> u32 { self.0 }
-    fn from_u32(value:u32) -> Self { Self(value )}
+    fn to_u64(&self) -> u64 { self.0 }
+    fn from_u64(value:u64) -> Self { Self(value )}
 }
 
 impl AlmanacTypeTrait for Humidity {
-    fn to_u32(&self) -> u32 { self.0 }
-    fn from_u32(value:u32) -> Self { Self(value )}
+    fn to_u64(&self) -> u64 { self.0 }
+    fn from_u64(value:u64) -> Self { Self(value )}
 }
 
 impl AlmanacTypeTrait for Location {
-    fn to_u32(&self) -> u32 { self.0 }
-    fn from_u32(value:u32) -> Self { Self(value )}
+    fn to_u64(&self) -> u64 { self.0 }
+    fn from_u64(value:u64) -> Self { Self(value )}
 }
 
 struct MappingRange<Destination:AlmanacTypeTrait, Source:AlmanacTypeTrait> {
     destination_range_start: Destination,
     source_range_start: Source,
-    range_length: u32
+    range_length: u64
 }
 
 impl<Destination:AlmanacTypeTrait, Source:AlmanacTypeTrait> MappingRange<Destination, Source> {
     fn is_source_in_range(&self, source:Source) -> bool {
-        source.to_u32() >= self.source_range_start.to_u32()
+        source.to_u64() >= self.source_range_start.to_u64()
         &&
-        source.to_u32() < self.source_range_start.to_u32() + self.range_length
+        source.to_u64() < self.source_range_start.to_u64() + self.range_length
     }
 
     fn convert(&self, source:Source) -> Destination {
-        Destination::from_u32(
-            self.destination_range_start.to_u32() +
-            ( source.to_u32() - self.source_range_start.to_u32() ))
+        Destination::from_u64(
+            self.destination_range_start.to_u64() +
+            ( source.to_u64() - self.source_range_start.to_u64() ))
     }
 }
 
@@ -131,7 +131,7 @@ impl<Source:AlmanacTypeTrait+Copy, Destination:AlmanacTypeTrait+Copy> SourceToDe
     fn new() -> Self {
         SourceToDestinationMap { mapping_range_list:Vec::new() }
     }
-    fn add_range(&mut self, source_range_start: Source, destination_range_start: Destination, range_length: u32) -> () {
+    fn add_range(&mut self, source_range_start: Source, destination_range_start: Destination, range_length: u64) -> () {
         self.mapping_range_list.push(MappingRange {
             source_range_start : source_range_start,
             destination_range_start : destination_range_start,
@@ -144,8 +144,8 @@ impl<Source:AlmanacTypeTrait+Copy, Destination:AlmanacTypeTrait+Copy> SourceToDe
                 return range.convert(source);
             }
         }
-        let sourceval = source.to_u32();
-        return Destination::from_u32(sourceval);
+        let sourceval = source.to_u64();
+        return Destination::from_u64(sourceval);
     }
     fn convert_vector(&self, source:&Vec<Source>) -> Vec<Destination> {
         source.into_iter().map(|source| self.convert(*source)).collect()
@@ -190,15 +190,15 @@ fn build_source_destination_map<Source:AlmanacTypeTrait+Copy, Destination:Almana
                 Rule::list_of_triples => {
                     let mut number_iter = list_of_triples.into_inner();
                     while let Some(destination_rule) = number_iter.next() {
-                        let destination_value = destination_rule.as_str().parse::<u32>().unwrap();
+                        let destination_value = destination_rule.as_str().parse::<u64>().unwrap();
 
                         let source_rule = number_iter.next().unwrap();
-                        let source_value = source_rule.as_str().parse::<u32>().unwrap();
+                        let source_value = source_rule.as_str().parse::<u64>().unwrap();
 
                         let range_rule = number_iter.next().unwrap();
-                        let range_value = range_rule.as_str().parse::<u32>().unwrap();
+                        let range_value = range_rule.as_str().parse::<u64>().unwrap();
 
-                        sd_map.add_range(Source::from_u32(source_value), Destination::from_u32(destination_value), range_value);
+                        sd_map.add_range(Source::from_u64(source_value), Destination::from_u64(destination_value), range_value);
                     }
                 }
                 _ => { println!("Unexpected {}", list_of_triples); }
@@ -215,7 +215,7 @@ fn build_almanac(file_rule:Pair<'_, Rule>) -> Almanac {
                 for number in almanac_entry.into_inner() {
                     match number.as_rule() {
                         Rule::number => {
-                            let number_value = number.as_str().parse::<u32>().unwrap();
+                            let number_value = number.as_str().parse::<u64>().unwrap();
                             almanac.seeds.push(Seed(number_value));
                         }
                         _ => { println!("Unexpected {}", number); }
@@ -342,6 +342,15 @@ pub fn part1() {
     let file_rule = parsed.next().unwrap();
     let almanac = build_almanac(file_rule);
 
-    println!("Day 5: No idea yet of solution ;-)");
+    let soils = almanac.seed_to_soil.convert_vector(&almanac.seeds);
+    let fertilizers = almanac.soil_to_fertilizer.convert_vector(&soils);
+    let water = almanac.fertilizer_to_water.convert_vector(&fertilizers);
+    let lights = almanac.water_to_light.convert_vector(&water);
+    let temperatures = almanac.light_to_temperature.convert_vector(&lights);
+    let humidities = almanac.temperature_to_humidity.convert_vector(&temperatures);
+    let locations = almanac.humidity_to_location.convert_vector(&humidities);
+    let lowest_location = locations.iter().min().unwrap();
+
+    println!("Day 5: Lowest location is {}", lowest_location.to_u64());
 }
 
