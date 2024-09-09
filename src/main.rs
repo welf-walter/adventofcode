@@ -9,5 +9,5 @@ fn main() {
     day2::part1and2();
     day3::part1and2();
     day4::part1and2();
-    day5::part1();
+    day5::part1and2();
 }

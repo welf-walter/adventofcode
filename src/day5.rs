@@ -207,11 +207,13 @@ fn build_source_destination_map<Source:AlmanacTypeTrait+Copy, Destination:Almana
         sd_map
 }
 
+#[derive(Debug, Clone, Copy)]
 enum BuildAlmanacMode {
     Part1,
     Part2
 }
 
+// 79 14 55 13 = [79, 14, 55, 13]
 fn build_seeds1(seeds_rule:Pair<'_, Rule>) -> Vec<Seed> {
     let mut seeds = Vec::new();
     for number in seeds_rule.into_inner() {
@@ -226,8 +228,21 @@ fn build_seeds1(seeds_rule:Pair<'_, Rule>) -> Vec<Seed> {
     seeds
 }
 
+// 79 14 55 13 = [79..79+14, 55.. 55+13]
 fn build_seeds2(seeds_rule:Pair<'_, Rule>) -> Vec<Seed> {
-    panic!("Function build_seeds2 not yet implemented.");
+    let mut seeds = Vec::new();
+    let mut number_iter = seeds_rule.into_inner();
+    while let Some(seed_start_number_rule) = number_iter.next() {
+        let seed_start_number_value = seed_start_number_rule.as_str().parse::<u64>().unwrap();
+
+        let range_rule = number_iter.next().unwrap();
+        let range_value = range_rule.as_str().parse::<u64>().unwrap();
+
+        for seed_number_value in seed_start_number_value .. seed_start_number_value + range_value {
+            seeds.push(Seed::from_u64(seed_number_value));
+        }
+    }
+    seeds
 }
 
 fn build_almanac(file_rule:Pair<'_, Rule>, mode: BuildAlmanacMode) -> Almanac {
@@ -269,7 +284,7 @@ fn build_almanac(file_rule:Pair<'_, Rule>, mode: BuildAlmanacMode) -> Almanac {
 }
 
 #[cfg(test)]
-fn build_example_almanac() -> Almanac {
+fn build_example_almanac(mode: BuildAlmanacMode) -> Almanac {
     let input = [
         "seeds: 79 14 55 13",
         "",
@@ -308,12 +323,12 @@ fn build_example_almanac() -> Almanac {
     let concat_input = input.join("\n");
     let mut parsed = Day5Parser::parse(Rule::file, &concat_input).unwrap();
     let file_rule = parsed.next().unwrap();
-    build_almanac(file_rule, BuildAlmanacMode::Part1)
+    build_almanac(file_rule, mode)
 }
 
 #[test]
 fn test_example1() {
-    let almanac = build_example_almanac();
+    let almanac = build_example_almanac(BuildAlmanacMode::Part1);
 
     assert_eq!(almanac.seeds, vec![Seed(79), Seed(14), Seed(55), Seed(13)]);
     assert_eq!(almanac.seed_to_soil.mapping_range_list.len(), 2);
@@ -350,30 +365,76 @@ fn test_example1() {
 
 }
 
+#[test]
+fn test_example2() {
+    let almanac = build_example_almanac(BuildAlmanacMode::Part2);
+
+    //Beginners way ;-)
+    //let mut seed_val_exp:Vec<u64> = Vec::new();
+    //seed_val_exp.extend(79..79+14);
+    //seed_val_exp.extend(55..55+13);
+    //let seed_exp:Vec<Seed> = seed_val_exp.into_iter().map(|x| Seed(x)).collect();
+    let seed_exp:Vec<Seed> = (79..79+14).chain(55..55+13).map(|x| Seed(x)).collect();
+    assert_eq!(almanac.seeds, seed_exp);
+    assert_eq!(almanac.seed_to_soil.mapping_range_list.len(), 2);
+    assert_eq!(almanac.soil_to_fertilizer.mapping_range_list.len(), 3);
+    assert_eq!(almanac.fertilizer_to_water.mapping_range_list.len(), 4);
+    assert_eq!(almanac.water_to_light.mapping_range_list.len(), 2);
+    assert_eq!(almanac.light_to_temperature.mapping_range_list.len(), 3);
+    assert_eq!(almanac.temperature_to_humidity.mapping_range_list.len(), 2);
+    assert_eq!(almanac.humidity_to_location.mapping_range_list.len(), 2);
+
+    let soils = almanac.seed_to_soil.convert_vector(&almanac.seeds);
+    assert_eq!(soils[3], Soil(84));
+
+    let fertilizers = almanac.soil_to_fertilizer.convert_vector(&soils);
+    assert_eq!(fertilizers[3], Fertilizer(84));
+
+    let water = almanac.fertilizer_to_water.convert_vector(&fertilizers);
+    assert_eq!(water[3], Water(84));
+
+    let lights = almanac.water_to_light.convert_vector(&water);
+    assert_eq!(lights[3], Light(77));
+
+    let temperatures = almanac.light_to_temperature.convert_vector(&lights);
+    assert_eq!(temperatures[3], Temperature(45));
+
+    let humidities = almanac.temperature_to_humidity.convert_vector(&temperatures);
+    assert_eq!(humidities[3], Humidity(46));
+
+    let locations = almanac.humidity_to_location.convert_vector(&humidities);
+    assert_eq!(locations[3], Location(46));
+
+    let lowest_location = locations.iter().min().unwrap();
+    assert_eq!(lowest_location, &Location(46));
+
+}
+
 use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
 
-pub fn part1() {
+pub fn part1and2() {
 
-    let file = File::open("data/day5.input").expect("Could not open data/day5.input");
-    let reader = BufReader::new(file);
+    for mode in [BuildAlmanacMode::Part1, BuildAlmanacMode::Part2] {
+        let file = File::open("data/day5.input").expect("Could not open data/day5.input");
+        let reader = BufReader::new(file);
 
-    let lines:Vec<String> = reader.lines().map( |line| line.unwrap() ).collect();
-    let concat_input = lines.join("\n");
-    let mut parsed = Day5Parser::parse(Rule::file, &concat_input).unwrap();
-    let file_rule = parsed.next().unwrap();
-    let almanac = build_almanac(file_rule, BuildAlmanacMode::Part1);
+        let lines:Vec<String> = reader.lines().map( |line| line.unwrap() ).collect();
+        let concat_input = lines.join("\n");
+        let mut parsed = Day5Parser::parse(Rule::file, &concat_input).unwrap();
+        let file_rule = parsed.next().unwrap();
+        let almanac = build_almanac(file_rule, mode);
 
-    let soils = almanac.seed_to_soil.convert_vector(&almanac.seeds);
-    let fertilizers = almanac.soil_to_fertilizer.convert_vector(&soils);
-    let water = almanac.fertilizer_to_water.convert_vector(&fertilizers);
-    let lights = almanac.water_to_light.convert_vector(&water);
-    let temperatures = almanac.light_to_temperature.convert_vector(&lights);
-    let humidities = almanac.temperature_to_humidity.convert_vector(&temperatures);
-    let locations = almanac.humidity_to_location.convert_vector(&humidities);
-    let lowest_location = locations.iter().min().unwrap();
+        let soils = almanac.seed_to_soil.convert_vector(&almanac.seeds);
+        let fertilizers = almanac.soil_to_fertilizer.convert_vector(&soils);
+        let water = almanac.fertilizer_to_water.convert_vector(&fertilizers);
+        let lights = almanac.water_to_light.convert_vector(&water);
+        let temperatures = almanac.light_to_temperature.convert_vector(&lights);
+        let humidities = almanac.temperature_to_humidity.convert_vector(&temperatures);
+        let locations = almanac.humidity_to_location.convert_vector(&humidities);
+        let lowest_location = locations.iter().min().unwrap();
 
-    println!("Day 5: Lowest location is {}", lowest_location.to_u64());
+        println!("Day 5, {:#?}: Lowest location is {}", mode, lowest_location.to_u64());
+    }
 }
-
