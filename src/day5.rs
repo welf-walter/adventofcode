@@ -207,20 +207,38 @@ fn build_source_destination_map<Source:AlmanacTypeTrait+Copy, Destination:Almana
         sd_map
 }
 
-fn build_almanac(file_rule:Pair<'_, Rule>) -> Almanac {
+enum BuildAlmanacMode {
+    Part1,
+    Part2
+}
+
+fn build_seeds1(seeds_rule:Pair<'_, Rule>) -> Vec<Seed> {
+    let mut seeds = Vec::new();
+    for number in seeds_rule.into_inner() {
+        match number.as_rule() {
+            Rule::number => {
+                let number_value = number.as_str().parse::<u64>().unwrap();
+                seeds.push(Seed(number_value));
+            }
+            _ => { println!("Unexpected {}", number); }
+        }
+    }
+    seeds
+}
+
+fn build_seeds2(seeds_rule:Pair<'_, Rule>) -> Vec<Seed> {
+    panic!("Function build_seeds2 not yet implemented.");
+}
+
+fn build_almanac(file_rule:Pair<'_, Rule>, mode: BuildAlmanacMode) -> Almanac {
     let mut almanac:Almanac = Almanac::new();
     for almanac_entry in file_rule.into_inner() {
         match almanac_entry.as_rule() {
             Rule::seeds => {
-                for number in almanac_entry.into_inner() {
-                    match number.as_rule() {
-                        Rule::number => {
-                            let number_value = number.as_str().parse::<u64>().unwrap();
-                            almanac.seeds.push(Seed(number_value));
-                        }
-                        _ => { println!("Unexpected {}", number); }
-                    }
-                }
+                almanac.seeds = match mode {
+                    BuildAlmanacMode::Part1 => build_seeds1(almanac_entry),
+                    BuildAlmanacMode::Part2 => build_seeds2(almanac_entry)
+                };
             },
             Rule::seed_to_soil => {
                 almanac.seed_to_soil = build_source_destination_map(almanac_entry);
@@ -250,8 +268,8 @@ fn build_almanac(file_rule:Pair<'_, Rule>) -> Almanac {
     almanac
 }
 
-#[test]
-fn test_example1() {
+#[cfg(test)]
+fn build_example_almanac() -> Almanac {
     let input = [
         "seeds: 79 14 55 13",
         "",
@@ -290,7 +308,12 @@ fn test_example1() {
     let concat_input = input.join("\n");
     let mut parsed = Day5Parser::parse(Rule::file, &concat_input).unwrap();
     let file_rule = parsed.next().unwrap();
-    let almanac = build_almanac(file_rule);
+    build_almanac(file_rule, BuildAlmanacMode::Part1)
+}
+
+#[test]
+fn test_example1() {
+    let almanac = build_example_almanac();
 
     assert_eq!(almanac.seeds, vec![Seed(79), Seed(14), Seed(55), Seed(13)]);
     assert_eq!(almanac.seed_to_soil.mapping_range_list.len(), 2);
@@ -340,7 +363,7 @@ pub fn part1() {
     let concat_input = lines.join("\n");
     let mut parsed = Day5Parser::parse(Rule::file, &concat_input).unwrap();
     let file_rule = parsed.next().unwrap();
-    let almanac = build_almanac(file_rule);
+    let almanac = build_almanac(file_rule, BuildAlmanacMode::Part1);
 
     let soils = almanac.seed_to_soil.convert_vector(&almanac.seeds);
     let fertilizers = almanac.soil_to_fertilizer.convert_vector(&soils);
