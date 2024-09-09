@@ -237,7 +237,7 @@ fn build_seeds2(seeds_rule:Pair<'_, Rule>) -> Vec<Seed> {
 
         let range_rule = number_iter.next().unwrap();
         let range_value = range_rule.as_str().parse::<u64>().unwrap();
-
+        println!("       Seed range: {}..{}",seed_start_number_value, seed_start_number_value + range_value);
         for seed_number_value in seed_start_number_value .. seed_start_number_value + range_value {
             seeds.push(Seed::from_u64(seed_number_value));
         }
