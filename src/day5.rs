@@ -123,6 +123,62 @@ fn test_mapping_range() {
     assert_eq!(range.convert(Seed(99)), Soil(51));
 }
 
+
+use std::ops::Range;
+// A list of ranges, e.g. [3..5, 7..9, 11..12] = [3,4,7,8,11]
+struct RangeList<T:AlmanacTypeTrait+Copy> {
+    ranges: Vec<Range<T>>,
+}
+
+impl<T:AlmanacTypeTrait+Copy> RangeList<T> {
+    // create single-valued ranges: [3,5,11] -> [3..4, 5..6, 11..12]
+    fn new(single_values: &Vec<T>) -> Self {
+        let mut vec:Vec<Range<T>> = Vec::new();
+        for t in single_values {
+            vec.push(*t..T::from_u64(t.to_u64() + 1));
+        }
+        Self { ranges: vec }
+    }
+
+    // todo: create real ranges: [(3,5),(7,9),(11,12)] -> [3..5, 7..9, 11..12]
+    // fn new(ranges: &Vec<Range<T>>) -> Self {
+
+}
+
+struct RangeListIterator<T> {
+    vec_iter:<Vec<Range<T>> as IntoIterator>::IntoIter
+}
+
+impl<T:AlmanacTypeTrait+Copy> IntoIterator for RangeList<T> {
+    type Item = T;
+    type IntoIter = RangeListIterator<T>;
+
+    // Required method
+    fn into_iter(self) -> Self::IntoIter {
+        RangeListIterator { vec_iter:self.ranges.into_iter() }
+    }
+}
+
+impl<T:AlmanacTypeTrait+Copy> Iterator for RangeListIterator<T> {
+    type Item = T;
+    fn next(&mut self) -> Option<<Self as Iterator>::Item> {
+        match self.vec_iter.next() {
+            Some(range) => Some(range.start),
+            None => None
+        }
+    }
+}
+
+#[test]
+fn test_range_list() {
+    let range_list1 = RangeList::new(&[Seed(3), Seed(5), Seed(11)].to_vec());
+    assert_eq!(range_list1.into_iter().collect::<Vec<Seed>>(), vec![Seed(3), Seed(5), Seed(11)]);
+    //for item in range_list1 {  fails: value used here after move
+    //    println!("{}", item.to_u64());
+    //}
+}
+
+
 struct SourceToDestinationMap<Source:AlmanacTypeTrait, Destination:AlmanacTypeTrait> {
     mapping_range_list:Vec<MappingRange<Destination, Source>>
 }
