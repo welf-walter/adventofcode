@@ -263,6 +263,14 @@ impl Almanac {
     }
 }
 
+impl Seed        { fn            seed_to_soil(&self, almanac:&Almanac) -> Soil        {            almanac.seed_to_soil.convert(*self) } }
+impl Soil        { fn      soil_to_fertilizer(&self, almanac:&Almanac) -> Fertilizer  {      almanac.soil_to_fertilizer.convert(*self) } }
+impl Fertilizer  { fn     fertilizer_to_water(&self, almanac:&Almanac) -> Water       {     almanac.fertilizer_to_water.convert(*self) } }
+impl Water       { fn          water_to_light(&self, almanac:&Almanac) -> Light       {          almanac.water_to_light.convert(*self) } }
+impl Light       { fn    light_to_temperature(&self, almanac:&Almanac) -> Temperature {    almanac.light_to_temperature.convert(*self) } }
+impl Temperature { fn temperature_to_humidity(&self, almanac:&Almanac) -> Humidity    { almanac.temperature_to_humidity.convert(*self) } }
+impl Humidity    { fn    humidity_to_location(&self, almanac:&Almanac) -> Location    {    almanac.humidity_to_location.convert(*self) } }
+
 use pest::iterators::Pair;
 
 fn build_source_destination_map<Source:AlmanacTypeTrait+Copy, Destination:AlmanacTypeTrait+Copy>
@@ -420,10 +428,18 @@ fn test_example1() {
     assert_eq!(almanac.temperature_to_humidity.mapping_range_list.len(), 2);
     assert_eq!(almanac.humidity_to_location.mapping_range_list.len(), 2);
 
-    let soils = almanac.seed_to_soil.convert_vector(&almanac.seeds.into_iter().collect());
+    let soils:Vec<Soil> = almanac.seeds.clone().into_iter().map(
+//        |seed| almanac.seed_to_soil.convert(seed)
+        |seed| seed.seed_to_soil(&almanac)
+    ).collect();
     assert_eq!(soils, vec![Soil(81), Soil(14), Soil(57), Soil(13)]);
 
-    let fertilizers = almanac.soil_to_fertilizer.convert_vector(&soils);
+    let fertilizers:Vec<Fertilizer> = almanac.seeds.clone().into_iter().map(
+//        |seed| almanac.soil_to_fertilizer.convert(
+//               almanac.seed_to_soil.convert(seed)
+        |seed| seed.seed_to_soil(&almanac)
+                   .soil_to_fertilizer(&almanac)
+    ).collect();
     assert_eq!(fertilizers, vec![Fertilizer(81), Fertilizer(53), Fertilizer(57), Fertilizer(52)]);
 
     let water = almanac.fertilizer_to_water.convert_vector(&fertilizers);
