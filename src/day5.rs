@@ -127,26 +127,36 @@ fn test_mapping_range() {
 use std::ops::Range;
 // A list of ranges, e.g. [3..5, 7..9, 11..12] = [3,4,7,8,11]
 struct RangeList<T:AlmanacTypeTrait+Copy> {
-    ranges: Vec<Range<T>>,
+    ranges: Vec<Range<u64>>,
+    dummy: Option<T>
 }
 
 impl<T:AlmanacTypeTrait+Copy> RangeList<T> {
     // create single-valued ranges: [3,5,11] -> [3..4, 5..6, 11..12]
-    fn new(single_values: &Vec<T>) -> Self {
-        let mut vec:Vec<Range<T>> = Vec::new();
+    fn create_single_valued_ranges(single_values: &Vec<T>) -> Self {
+        let mut vec:Vec<Range<u64>> = Vec::new();
         for t in single_values {
-            vec.push(*t..T::from_u64(t.to_u64() + 1));
+            let i = t.to_u64();
+            vec.push(i .. i+1);
         }
-        Self { ranges: vec }
+        Self { ranges: vec, dummy:None }
     }
 
-    // todo: create real ranges: [(3,5),(7,9),(11,12)] -> [3..5, 7..9, 11..12]
-    // fn new(ranges: &Vec<Range<T>>) -> Self {
+    // create real ranges: [(3,5),(7,9),(11,12)] -> [3..5, 7..9, 11..12]
+    fn new(ranges: &Vec<Range<T>>) -> Self {
+        let mut vec:Vec<Range<u64>> = Vec::new();
+        for range in ranges {
+            vec.push(range.start.to_u64() .. range.end.to_u64());
+        }
+        Self { ranges: vec, dummy:None }
+    }
 
 }
 
-struct RangeListIterator<T> {
-    vec_iter:<Vec<Range<T>> as IntoIterator>::IntoIter
+struct RangeListIterator<T:AlmanacTypeTrait> {
+    vec_iter:<Vec<Range<u64>> as IntoIterator>::IntoIter,
+    current_range_iter:Option<<Range<u64> as IntoIterator>::IntoIter>,
+    dummy: Option<T>
 }
 
 impl<T:AlmanacTypeTrait+Copy> IntoIterator for RangeList<T> {
@@ -155,27 +165,39 @@ impl<T:AlmanacTypeTrait+Copy> IntoIterator for RangeList<T> {
 
     // Required method
     fn into_iter(self) -> Self::IntoIter {
-        RangeListIterator { vec_iter:self.ranges.into_iter() }
+        RangeListIterator { vec_iter:self.ranges.into_iter(), current_range_iter:None, dummy:None }
     }
 }
 
 impl<T:AlmanacTypeTrait+Copy> Iterator for RangeListIterator<T> {
     type Item = T;
     fn next(&mut self) -> Option<<Self as Iterator>::Item> {
-        match self.vec_iter.next() {
-            Some(range) => Some(range.start),
-            None => None
+        loop {
+            if self.current_range_iter.is_none() {
+                match self.vec_iter.next() {
+                    Some(range) => { self.current_range_iter = Some(range.into_iter()) }
+                    None => { return None; } // end of list of ranges
+                }
+            }
+            match self.current_range_iter.as_mut().unwrap().next() {
+                Some(t) => return Some(T::from_u64(t)),
+                None => { self.current_range_iter = None }
+            };
         }
     }
 }
 
 #[test]
 fn test_range_list() {
-    let range_list1 = RangeList::new(&[Seed(3), Seed(5), Seed(11)].to_vec());
+    let range_list1 = RangeList::create_single_valued_ranges(&[Seed(3), Seed(5), Seed(11)].to_vec());
     assert_eq!(range_list1.into_iter().collect::<Vec<Seed>>(), vec![Seed(3), Seed(5), Seed(11)]);
     //for item in range_list1 {  fails: value used here after move
     //    println!("{}", item.to_u64());
     //}
+
+    let range_list2 = RangeList::new(&[Seed(3)..Seed(5), Seed(7)..Seed(9), Seed(11)..Seed(12)].to_vec());
+    assert_eq!(range_list2.into_iter().collect::<Vec<Seed>>(), vec![Seed(3), Seed(4), Seed(7), Seed(8), Seed(11)]);
+
 }
 
 
