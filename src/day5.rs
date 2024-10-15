@@ -126,6 +126,7 @@ fn test_mapping_range() {
 
 use std::ops::Range;
 // A list of ranges, e.g. [3..5, 7..9, 11..12] = [3,4,7,8,11]
+#[derive(Clone)]
 struct RangeList<T:AlmanacTypeTrait+Copy> {
     ranges: Vec<Range<u64>>,
     dummy: Option<T>
@@ -143,12 +144,16 @@ impl<T:AlmanacTypeTrait+Copy> RangeList<T> {
     }
 
     // create real ranges: [(3,5),(7,9),(11,12)] -> [3..5, 7..9, 11..12]
-    fn new(ranges: &Vec<Range<T>>) -> Self {
+    fn create_real_ranges(ranges: &Vec<Range<T>>) -> Self {
         let mut vec:Vec<Range<u64>> = Vec::new();
         for range in ranges {
             vec.push(range.start.to_u64() .. range.end.to_u64());
         }
         Self { ranges: vec, dummy:None }
+    }
+
+    fn new() -> Self {
+        Self { ranges: Vec::new(), dummy:None }
     }
 
 }
@@ -195,7 +200,7 @@ fn test_range_list() {
     //    println!("{}", item.to_u64());
     //}
 
-    let range_list2 = RangeList::new(&[Seed(3)..Seed(5), Seed(7)..Seed(9), Seed(11)..Seed(12)].to_vec());
+    let range_list2 = RangeList::create_real_ranges(&[Seed(3)..Seed(5), Seed(7)..Seed(9), Seed(11)..Seed(12)].to_vec());
     assert_eq!(range_list2.into_iter().collect::<Vec<Seed>>(), vec![Seed(3), Seed(4), Seed(7), Seed(8), Seed(11)]);
 
 }
@@ -231,7 +236,7 @@ impl<Source:AlmanacTypeTrait+Copy, Destination:AlmanacTypeTrait+Copy> SourceToDe
 }
 
 struct Almanac {
-    seeds: Vec<Seed>,
+    seeds: RangeList<Seed>,
     seed_to_soil: SourceToDestinationMap<Seed, Soil>,
     soil_to_fertilizer: SourceToDestinationMap<Soil, Fertilizer>,
     fertilizer_to_water: SourceToDestinationMap<Fertilizer, Water>,
@@ -245,7 +250,7 @@ impl Almanac {
     fn new() -> Almanac {
         {
             Almanac {
-                seeds:Vec::new(),
+                seeds:RangeList::new(),
                 seed_to_soil: SourceToDestinationMap::new(),
                 soil_to_fertilizer: SourceToDestinationMap::new(),
                 fertilizer_to_water: SourceToDestinationMap::new(),
@@ -292,7 +297,7 @@ enum BuildAlmanacMode {
 }
 
 // 79 14 55 13 = [79, 14, 55, 13]
-fn build_seeds1(seeds_rule:Pair<'_, Rule>) -> Vec<Seed> {
+fn build_seeds1(seeds_rule:Pair<'_, Rule>) -> RangeList<Seed> {
     let mut seeds = Vec::new();
     for number in seeds_rule.into_inner() {
         match number.as_rule() {
@@ -303,12 +308,12 @@ fn build_seeds1(seeds_rule:Pair<'_, Rule>) -> Vec<Seed> {
             _ => { println!("Unexpected {}", number); }
         }
     }
-    seeds
+    RangeList::create_single_valued_ranges(&seeds)
 }
 
 // 79 14 55 13 = [79..79+14, 55.. 55+13]
-fn build_seeds2(seeds_rule:Pair<'_, Rule>) -> Vec<Seed> {
-    let mut seeds = Vec::new();
+fn build_seeds2(seeds_rule:Pair<'_, Rule>) -> RangeList<Seed> {
+    let mut ranges = Vec::new();
     let mut number_iter = seeds_rule.into_inner();
     while let Some(seed_start_number_rule) = number_iter.next() {
         let seed_start_number_value = seed_start_number_rule.as_str().parse::<u64>().unwrap();
@@ -316,11 +321,9 @@ fn build_seeds2(seeds_rule:Pair<'_, Rule>) -> Vec<Seed> {
         let range_rule = number_iter.next().unwrap();
         let range_value = range_rule.as_str().parse::<u64>().unwrap();
         println!("       Seed range: {}..{}",seed_start_number_value, seed_start_number_value + range_value);
-        for seed_number_value in seed_start_number_value .. seed_start_number_value + range_value {
-            seeds.push(Seed::from_u64(seed_number_value));
-        }
+        ranges.push(Seed::from_u64(seed_start_number_value)..Seed::from_u64(seed_start_number_value + range_value));
     }
-    seeds
+    RangeList::create_real_ranges(&ranges)
 }
 
 fn build_almanac(file_rule:Pair<'_, Rule>, mode: BuildAlmanacMode) -> Almanac {
@@ -408,7 +411,7 @@ fn build_example_almanac(mode: BuildAlmanacMode) -> Almanac {
 fn test_example1() {
     let almanac = build_example_almanac(BuildAlmanacMode::Part1);
 
-    assert_eq!(almanac.seeds, vec![Seed(79), Seed(14), Seed(55), Seed(13)]);
+    assert_eq!(almanac.seeds.clone().into_iter().collect::<Vec<Seed>>(), vec![Seed(79), Seed(14), Seed(55), Seed(13)]);
     assert_eq!(almanac.seed_to_soil.mapping_range_list.len(), 2);
     assert_eq!(almanac.soil_to_fertilizer.mapping_range_list.len(), 3);
     assert_eq!(almanac.fertilizer_to_water.mapping_range_list.len(), 4);
@@ -417,7 +420,7 @@ fn test_example1() {
     assert_eq!(almanac.temperature_to_humidity.mapping_range_list.len(), 2);
     assert_eq!(almanac.humidity_to_location.mapping_range_list.len(), 2);
 
-    let soils = almanac.seed_to_soil.convert_vector(&almanac.seeds);
+    let soils = almanac.seed_to_soil.convert_vector(&almanac.seeds.into_iter().collect());
     assert_eq!(soils, vec![Soil(81), Soil(14), Soil(57), Soil(13)]);
 
     let fertilizers = almanac.soil_to_fertilizer.convert_vector(&soils);
@@ -453,7 +456,7 @@ fn test_example2() {
     //seed_val_exp.extend(55..55+13);
     //let seed_exp:Vec<Seed> = seed_val_exp.into_iter().map(|x| Seed(x)).collect();
     let seed_exp:Vec<Seed> = (79..79+14).chain(55..55+13).map(|x| Seed(x)).collect();
-    assert_eq!(almanac.seeds, seed_exp);
+    assert_eq!(almanac.seeds.clone().into_iter().collect::<Vec<Seed>>(), seed_exp);
     assert_eq!(almanac.seed_to_soil.mapping_range_list.len(), 2);
     assert_eq!(almanac.soil_to_fertilizer.mapping_range_list.len(), 3);
     assert_eq!(almanac.fertilizer_to_water.mapping_range_list.len(), 4);
@@ -462,7 +465,7 @@ fn test_example2() {
     assert_eq!(almanac.temperature_to_humidity.mapping_range_list.len(), 2);
     assert_eq!(almanac.humidity_to_location.mapping_range_list.len(), 2);
 
-    let soils = almanac.seed_to_soil.convert_vector(&almanac.seeds);
+    let soils = almanac.seed_to_soil.convert_vector(&almanac.seeds.into_iter().collect::<Vec<Seed>>());
     assert_eq!(soils[3], Soil(84));
 
     let fertilizers = almanac.soil_to_fertilizer.convert_vector(&soils);
@@ -504,7 +507,7 @@ pub fn part1and2() {
         let file_rule = parsed.next().unwrap();
         let almanac = build_almanac(file_rule, mode);
 
-        let soils = almanac.seed_to_soil.convert_vector(&almanac.seeds);
+        let soils = almanac.seed_to_soil.convert_vector(&almanac.seeds.into_iter().collect::<Vec<Seed>>());
         let fertilizers = almanac.soil_to_fertilizer.convert_vector(&soils);
         let water = almanac.fertilizer_to_water.convert_vector(&fertilizers);
         let lights = almanac.water_to_light.convert_vector(&water);
