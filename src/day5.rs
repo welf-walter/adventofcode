@@ -133,7 +133,6 @@ struct RangeList<T:AlmanacTypeTrait+Copy> {
 }
 
 struct RangeListIterator<'a, T:AlmanacTypeTrait> {
-//    vec_iter:<Vec<Range<u64>> as IntoIterator>::IntoIter,
     vec_iter:std::slice::Iter<'a, Range<u64>>,
     current_range:Option<Range<u64>>,
     dummy: Option<T>
@@ -172,6 +171,7 @@ impl<T:AlmanacTypeTrait+Copy> RangeList<T> {
 impl<T:AlmanacTypeTrait+Copy> Iterator for RangeListIterator<'_, T> {
     type Item = T;
     fn next(&mut self) -> Option<<Self as Iterator>::Item> {
+        let mut loopcnt = 0;
         loop {
             if self.current_range.is_none() {
                 match self.vec_iter.next() {
@@ -183,6 +183,9 @@ impl<T:AlmanacTypeTrait+Copy> Iterator for RangeListIterator<'_, T> {
                 Some(t) => return Some(T::from_u64(t)),
                 None => { self.current_range = None }
             };
+            // just to make sure to avoid endless loop
+            loopcnt += 1;
+            if loopcnt > 2 { panic!("This should not happen"); }
         }
     }
 }
@@ -320,7 +323,7 @@ fn build_seeds2(seeds_rule:Pair<'_, Rule>) -> RangeList<Seed> {
 
         let range_rule = number_iter.next().unwrap();
         let range_value = range_rule.as_str().parse::<u64>().unwrap();
-        println!("       Seed range: {}..{}",seed_start_number_value, seed_start_number_value + range_value);
+        //println!("       Seed range: {}..{}",seed_start_number_value, seed_start_number_value + range_value);
         ranges.push(Seed::from_u64(seed_start_number_value)..Seed::from_u64(seed_start_number_value + range_value));
     }
     RangeList::create_real_ranges(&ranges)
@@ -561,6 +564,9 @@ pub fn part1and2() {
         let mut parsed = Day5Parser::parse(Rule::file, &concat_input).unwrap();
         let file_rule = parsed.next().unwrap();
         let almanac = build_almanac(file_rule, mode);
+
+        let seed_count = almanac.seeds.iter().count();
+        println!("Day 5, {:#?}: Number of seeds is {}", mode, seed_count);
 
         let lowest_location = almanac.seeds.iter().map(
             |seed| seed.seed_to_soil(&almanac)
