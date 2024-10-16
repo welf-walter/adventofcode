@@ -225,9 +225,6 @@ impl<Source:AlmanacTypeTrait+Copy, Destination:AlmanacTypeTrait+Copy> SourceToDe
         let sourceval = source.to_u64();
         return Destination::from_u64(sourceval);
     }
-    fn convert_vector(&self, source:&Vec<Source>) -> Vec<Destination> {
-        source.into_iter().map(|source| self.convert(*source)).collect()
-    }
 }
 
 struct Almanac {
@@ -424,36 +421,71 @@ fn test_example1() {
     assert_eq!(almanac.humidity_to_location.mapping_range_list.len(), 2);
 
     let soils:Vec<Soil> = almanac.seeds.iter().map(
-//        |seed| almanac.seed_to_soil.convert(seed)
         |seed| seed.seed_to_soil(&almanac)
     ).collect();
     assert_eq!(soils, vec![Soil(81), Soil(14), Soil(57), Soil(13)]);
 
     let fertilizers:Vec<Fertilizer> = almanac.seeds.iter().map(
-//        |seed| almanac.soil_to_fertilizer.convert(
-//               almanac.seed_to_soil.convert(seed)
         |seed| seed.seed_to_soil(&almanac)
                    .soil_to_fertilizer(&almanac)
     ).collect();
     assert_eq!(fertilizers, vec![Fertilizer(81), Fertilizer(53), Fertilizer(57), Fertilizer(52)]);
 
-    let water = almanac.fertilizer_to_water.convert_vector(&fertilizers);
+    let water:Vec<Water> = almanac.seeds.iter().map(
+        |seed| seed.seed_to_soil(&almanac)
+                   .soil_to_fertilizer(&almanac)
+                   .fertilizer_to_water(&almanac)
+    ).collect();
     assert_eq!(water, vec![Water(81), Water(49), Water(53), Water(41)]);
 
-    let lights = almanac.water_to_light.convert_vector(&water);
+    let lights:Vec<Light> = almanac.seeds.iter().map(
+        |seed| seed.seed_to_soil(&almanac)
+                   .soil_to_fertilizer(&almanac)
+                   .fertilizer_to_water(&almanac)
+                   .water_to_light(&almanac)
+    ).collect();
     assert_eq!(lights, vec![Light(74), Light(42), Light(46), Light(34)]);
 
-    let temperatures = almanac.light_to_temperature.convert_vector(&lights);
+    let temperatures:Vec<Temperature> = almanac.seeds.iter().map(
+        |seed| seed.seed_to_soil(&almanac)
+                   .soil_to_fertilizer(&almanac)
+                   .fertilizer_to_water(&almanac)
+                   .water_to_light(&almanac)
+                   .light_to_temperature(&almanac)
+    ).collect();
     assert_eq!(temperatures, vec![Temperature(78), Temperature(42), Temperature(82), Temperature(34)]);
 
-    let humidities = almanac.temperature_to_humidity.convert_vector(&temperatures);
+    let humidities:Vec<Humidity> = almanac.seeds.iter().map(
+        |seed| seed.seed_to_soil(&almanac)
+                   .soil_to_fertilizer(&almanac)
+                   .fertilizer_to_water(&almanac)
+                   .water_to_light(&almanac)
+                   .light_to_temperature(&almanac)
+                   .temperature_to_humidity(&almanac)
+    ).collect();
     assert_eq!(humidities, vec![Humidity(78), Humidity(43), Humidity(82), Humidity(35)]);
 
-    let locations = almanac.humidity_to_location.convert_vector(&humidities);
+    let locations:Vec<Location> = almanac.seeds.iter().map(
+        |seed| seed.seed_to_soil(&almanac)
+                   .soil_to_fertilizer(&almanac)
+                   .fertilizer_to_water(&almanac)
+                   .water_to_light(&almanac)
+                   .light_to_temperature(&almanac)
+                   .temperature_to_humidity(&almanac)
+                   .humidity_to_location(&almanac)
+    ).collect();
     assert_eq!(locations, vec![Location(82), Location(43), Location(86), Location(35)]);
 
-    let lowest_location = locations.iter().min().unwrap();
-    assert_eq!(lowest_location, &Location(35));
+    let lowest_location = almanac.seeds.iter().map(
+        |seed| seed.seed_to_soil(&almanac)
+                   .soil_to_fertilizer(&almanac)
+                   .fertilizer_to_water(&almanac)
+                   .water_to_light(&almanac)
+                   .light_to_temperature(&almanac)
+                   .temperature_to_humidity(&almanac)
+                   .humidity_to_location(&almanac)
+    ).min().unwrap();
+    assert_eq!(lowest_location, Location(35));
 
 }
 
@@ -476,29 +508,41 @@ fn test_example2() {
     assert_eq!(almanac.temperature_to_humidity.mapping_range_list.len(), 2);
     assert_eq!(almanac.humidity_to_location.mapping_range_list.len(), 2);
 
-    let soils = almanac.seed_to_soil.convert_vector(&almanac.seeds.iter().collect::<Vec<Seed>>());
-    assert_eq!(soils[3], Soil(84));
+    // check fourth value
+    let seed = almanac.seeds.iter().skip(3).next().unwrap();
+    assert_eq!(seed, Seed(82));
 
-    let fertilizers = almanac.soil_to_fertilizer.convert_vector(&soils);
-    assert_eq!(fertilizers[3], Fertilizer(84));
+    let soil = seed.seed_to_soil(&almanac);
+    assert_eq!(soil, Soil(84));
 
-    let water = almanac.fertilizer_to_water.convert_vector(&fertilizers);
-    assert_eq!(water[3], Water(84));
+    let fertilizer = soil.soil_to_fertilizer(&almanac);
+    assert_eq!(fertilizer, Fertilizer(84));
 
-    let lights = almanac.water_to_light.convert_vector(&water);
-    assert_eq!(lights[3], Light(77));
+    let water = fertilizer.fertilizer_to_water(&almanac);
+    assert_eq!(water, Water(84));
 
-    let temperatures = almanac.light_to_temperature.convert_vector(&lights);
-    assert_eq!(temperatures[3], Temperature(45));
+    let light = water.water_to_light(&almanac);
+    assert_eq!(light, Light(77));
 
-    let humidities = almanac.temperature_to_humidity.convert_vector(&temperatures);
-    assert_eq!(humidities[3], Humidity(46));
+    let temperature = light.light_to_temperature(&almanac);
+    assert_eq!(temperature, Temperature(45));
 
-    let locations = almanac.humidity_to_location.convert_vector(&humidities);
-    assert_eq!(locations[3], Location(46));
+    let humidity = temperature.temperature_to_humidity(&almanac);
+    assert_eq!(humidity, Humidity(46));
 
-    let lowest_location = locations.iter().min().unwrap();
-    assert_eq!(lowest_location, &Location(46));
+    let location = humidity.humidity_to_location(&almanac);
+    assert_eq!(location, Location(46));
+
+    let lowest_location = almanac.seeds.iter().map(
+        |seed| seed.seed_to_soil(&almanac)
+                   .soil_to_fertilizer(&almanac)
+                   .fertilizer_to_water(&almanac)
+                   .water_to_light(&almanac)
+                   .light_to_temperature(&almanac)
+                   .temperature_to_humidity(&almanac)
+                   .humidity_to_location(&almanac)
+    ).min().unwrap();
+    assert_eq!(lowest_location, Location(46));
 
 }
 
@@ -518,14 +562,15 @@ pub fn part1and2() {
         let file_rule = parsed.next().unwrap();
         let almanac = build_almanac(file_rule, mode);
 
-        let soils = almanac.seed_to_soil.convert_vector(&almanac.seeds.iter().collect::<Vec<Seed>>());
-        let fertilizers = almanac.soil_to_fertilizer.convert_vector(&soils);
-        let water = almanac.fertilizer_to_water.convert_vector(&fertilizers);
-        let lights = almanac.water_to_light.convert_vector(&water);
-        let temperatures = almanac.light_to_temperature.convert_vector(&lights);
-        let humidities = almanac.temperature_to_humidity.convert_vector(&temperatures);
-        let locations = almanac.humidity_to_location.convert_vector(&humidities);
-        let lowest_location = locations.iter().min().unwrap();
+        let lowest_location = almanac.seeds.iter().map(
+            |seed| seed.seed_to_soil(&almanac)
+                       .soil_to_fertilizer(&almanac)
+                       .fertilizer_to_water(&almanac)
+                       .water_to_light(&almanac)
+                       .light_to_temperature(&almanac)
+                       .temperature_to_humidity(&almanac)
+                       .humidity_to_location(&almanac)
+        ).min().unwrap();
 
         println!("Day 5, {:#?}: Lowest location is {}", mode, lowest_location.to_u64());
     }
