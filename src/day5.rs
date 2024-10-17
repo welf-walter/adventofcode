@@ -125,17 +125,17 @@ fn test_mapping_range() {
 
 
 use std::ops::Range;
+use std::marker::PhantomData;
 // A list of ranges, e.g. [3..5, 7..9, 11..12] = [3,4,7,8,11]
-#[derive(Clone)]
 struct RangeList<T:AlmanacTypeTrait+Copy> {
     ranges: Vec<Range<u64>>,
-    dummy: Option<T>
+    dummy: PhantomData<T>
 }
 
 struct RangeListIterator<'a, T:AlmanacTypeTrait> {
     vec_iter:std::slice::Iter<'a, Range<u64>>,
     current_range:Option<Range<u64>>,
-    dummy: Option<T>
+    dummy: PhantomData<T>
 }
 
 impl<T:AlmanacTypeTrait+Copy> RangeList<T> {
@@ -146,7 +146,7 @@ impl<T:AlmanacTypeTrait+Copy> RangeList<T> {
             let i = t.to_u64();
             vec.push(i .. i+1);
         }
-        Self { ranges: vec, dummy:None }
+        Self { ranges: vec, dummy:PhantomData }
     }
 
     // create real ranges: [(3,5),(7,9),(11,12)] -> [3..5, 7..9, 11..12]
@@ -155,15 +155,15 @@ impl<T:AlmanacTypeTrait+Copy> RangeList<T> {
         for range in ranges {
             vec.push(range.start.to_u64() .. range.end.to_u64());
         }
-        Self { ranges: vec, dummy:None }
+        Self { ranges: vec, dummy:PhantomData }
     }
 
     fn new() -> Self {
-        Self { ranges: Vec::new(), dummy:None }
+        Self { ranges: Vec::new(), dummy:PhantomData }
     }
 
     fn iter(&self) -> RangeListIterator<T> {
-        RangeListIterator { vec_iter:self.ranges.iter(), current_range:None, dummy:None }
+        RangeListIterator { vec_iter:self.ranges.iter(), current_range:None, dummy:PhantomData }
     }
 
 }
