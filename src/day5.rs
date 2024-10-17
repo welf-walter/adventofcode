@@ -552,6 +552,7 @@ fn test_example2() {
 use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
+use std::time::Instant;
 
 pub fn part1and2() {
 
@@ -565,8 +566,10 @@ pub fn part1and2() {
         let file_rule = parsed.next().unwrap();
         let almanac = build_almanac(file_rule, mode);
 
+        let start = Instant::now();
+
         let seed_count = almanac.seeds.iter().count();
-        println!("Day 5, {:#?}: Number of seeds is {}", mode, seed_count);
+        println!("Day 5, {:#?}: Number of seeds is {} ({} seconds)", mode, seed_count, start.elapsed().as_secs());
 
         let lowest_location = almanac.seeds.iter().map(
             |seed| seed.seed_to_soil(&almanac)
@@ -578,6 +581,6 @@ pub fn part1and2() {
                        .humidity_to_location(&almanac)
         ).min().unwrap();
 
-        println!("Day 5, {:#?}: Lowest location is {}", mode, lowest_location.to_u64());
+        println!("Day 5, {:#?}: Lowest location is {} ({} seconds)", mode, lowest_location.to_u64(), start.elapsed().as_secs());
     }
 }
