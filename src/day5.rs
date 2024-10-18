@@ -157,6 +157,27 @@ fn test_mapping_range() {
         behind: None
       });
 
+      assert_eq!(range.convert_range(Seed(150)..Seed(155)),
+      MappingRangeConversionResult {
+        before: None,
+        mapped: None,
+        behind: Some(Seed(150)..Seed(155))
+      });
+
+      assert_eq!(range.convert_range(Seed(98)..Seed(100)),
+      MappingRangeConversionResult {
+        before: None,
+        mapped: Some(Soil(50)..Soil(52)),
+        behind: None
+      });
+
+      assert_eq!(range.convert_range(Seed(90)..Seed(105)),
+      MappingRangeConversionResult {
+        before: Some(Seed(90)..Seed(98)),
+        mapped: Some(Soil(50)..Soil(52)),
+        behind: Some(Seed(100)..Seed(105))
+      });
+
 }
 
 
