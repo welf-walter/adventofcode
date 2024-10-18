@@ -129,7 +129,7 @@ fn test_mapping_range() {
 use std::ops::Range;
 use std::marker::PhantomData;
 // A list of ranges, e.g. [3..5, 7..9, 11..12] = [3,4,7,8,11]
-struct RangeList<T:AlmanacType+Copy> {
+struct RangeList<T:AlmanacType> {
     ranges: Vec<Range<u64>>,
     dummy: PhantomData<T>
 }
@@ -140,7 +140,7 @@ struct RangeListIterator<'a, T:AlmanacType> {
     dummy: PhantomData<T>
 }
 
-impl<T:AlmanacType+Copy> RangeList<T> {
+impl<T:AlmanacType> RangeList<T> {
     // create single-valued ranges: [3,5,11] -> [3..4, 5..6, 11..12]
     fn create_single_valued_ranges(single_values: &Vec<T>) -> Self {
         let mut vec:Vec<Range<u64>> = Vec::new();
@@ -170,7 +170,7 @@ impl<T:AlmanacType+Copy> RangeList<T> {
 
 }
 
-impl<T:AlmanacType+Copy> Iterator for RangeListIterator<'_, T> {
+impl<T:AlmanacType> Iterator for RangeListIterator<'_, T> {
     type Item = T;
     fn next(&mut self) -> Option<<Self as Iterator>::Item> {
         let mut loopcnt = 0;
@@ -210,7 +210,7 @@ struct SourceToDestinationMap<Source:AlmanacType, Destination:AlmanacType> {
     mapping_range_list:Vec<MappingRange<Destination, Source>>
 }
 
-impl<Source:AlmanacType+Copy, Destination:AlmanacType+Copy> SourceToDestinationMap<Source, Destination> {
+impl<Source:AlmanacType, Destination:AlmanacType> SourceToDestinationMap<Source, Destination> {
     fn new() -> Self {
         SourceToDestinationMap { mapping_range_list:Vec::new() }
     }
@@ -269,7 +269,7 @@ impl Humidity    { fn    humidity_to_location(&self, almanac:&Almanac) -> Locati
 
 use pest::iterators::Pair;
 
-fn build_source_destination_map<Source:AlmanacType+Copy, Destination:AlmanacType+Copy>
+fn build_source_destination_map<Source:AlmanacType, Destination:AlmanacType>
     (mapping_rule:Pair<'_, Rule>) -> SourceToDestinationMap<Source, Destination> {
         let mut sd_map = SourceToDestinationMap::new();
         for list_of_triples in mapping_rule.into_inner() {
