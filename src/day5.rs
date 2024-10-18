@@ -94,6 +94,16 @@ struct MappingRange<Destination:AlmanacType, Source:AlmanacType> {
     range_length: u64
 }
 
+use std::cmp::min;
+use std::cmp::max;
+
+#[derive(PartialEq,Debug)]
+struct MappingRangeConversionResult<Destination:AlmanacType, Source:AlmanacType> {
+    before: Option<Range<Source>>,
+    mapped: Option<Range<Destination>>,
+    behind: Option<Range<Source>>
+}
+
 impl<Destination:AlmanacType, Source:AlmanacType> MappingRange<Destination, Source> {
     fn is_source_in_range(&self, source:Source) -> bool {
         source >= self.source_range_start
@@ -105,6 +115,23 @@ impl<Destination:AlmanacType, Source:AlmanacType> MappingRange<Destination, Sour
         Destination::from_u64(
             self.destination_range_start.to_u64() +
             ( source.to_u64() - self.source_range_start.to_u64() ))
+    }
+
+    // convert a..b according to mapping range
+    // result can be up to three ranges:
+    //           |----MappingSourceRange--|
+    //   |-------------sourceRange------------------|
+    //   |-before|                        |-behind--|     |---destinationRange---|
+    fn convert_range(&self, source_range:Range<Source>) -> MappingRangeConversionResult<Destination, Source> {
+        let mapping_start = self.source_range_start;
+        let mapping_end = Source::from_u64(self.source_range_start.to_u64() + self.range_length);
+        MappingRangeConversionResult {
+            before: if source_range.start < mapping_start { Some(source_range.start .. min(source_range.end, mapping_start))} else { None },
+            behind: if source_range.end   > mapping_end   { Some(max(source_range.start, mapping_end) .. source_range.end)} else { None },
+            mapped: if source_range.start < mapping_end && source_range.end >= mapping_start
+                      { Some(self.convert(max(source_range.start, mapping_start)) .. self.convert(min(source_range.end, mapping_end))) }
+                    else { None }
+        }
     }
 
 }
@@ -122,6 +149,13 @@ fn test_mapping_range() {
 
     assert_eq!(range.convert(Seed(98)), Soil(50));
     assert_eq!(range.convert(Seed(99)), Soil(51));
+
+    assert_eq!(range.convert_range(Seed(50)..Seed(55)),
+      MappingRangeConversionResult {
+        before: Some(Seed(50)..Seed(55)),
+        mapped: None,
+        behind: None
+      });
 
 }
 
