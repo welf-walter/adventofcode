@@ -122,7 +122,7 @@ impl<Destination:AlmanacType, Source:AlmanacType> MappingRange<Destination, Sour
     //           |----MappingSourceRange--|
     //   |-------------sourceRange------------------|
     //   |-before|                        |-behind--|     |---destinationRange---|
-    fn convert_range(&self, source_range:Range<Source>) -> MappingRangeConversionResult<Destination, Source> {
+    fn convert_range(&self, source_range:&Range<Source>) -> MappingRangeConversionResult<Destination, Source> {
         let mapping_start = self.source_range_start;
         let mapping_end = Source::from_u64(self.source_range_start.to_u64() + self.range_length);
         MappingRangeConversionResult {
@@ -150,28 +150,28 @@ fn test_mapping_range() {
     assert_eq!(range.convert(Seed(98)), Soil(50));
     assert_eq!(range.convert(Seed(99)), Soil(51));
 
-    assert_eq!(range.convert_range(Seed(50)..Seed(55)),
+    assert_eq!(range.convert_range(&(Seed(50)..Seed(55))),
       MappingRangeConversionResult {
         before: Some(Seed(50)..Seed(55)),
         mapped: None,
         behind: None
       });
 
-      assert_eq!(range.convert_range(Seed(150)..Seed(155)),
+      assert_eq!(range.convert_range(&(Seed(150)..Seed(155))),
       MappingRangeConversionResult {
         before: None,
         mapped: None,
         behind: Some(Seed(150)..Seed(155))
       });
 
-      assert_eq!(range.convert_range(Seed(98)..Seed(100)),
+      assert_eq!(range.convert_range(&(Seed(98)..Seed(100))),
       MappingRangeConversionResult {
         before: None,
         mapped: Some(Soil(50)..Soil(52)),
         behind: None
       });
 
-      assert_eq!(range.convert_range(Seed(90)..Seed(105)),
+      assert_eq!(range.convert_range(&(Seed(90)..Seed(105))),
       MappingRangeConversionResult {
         before: Some(Seed(90)..Seed(98)),
         mapped: Some(Soil(50)..Soil(52)),
@@ -182,82 +182,78 @@ fn test_mapping_range() {
 
 
 use std::ops::Range;
-use std::marker::PhantomData;
 // A list of ranges, e.g. [3..5, 7..9, 11..12] = [3,4,7,8,11]
+#[derive(Clone)]
 struct RangeList<T:AlmanacType> {
-    ranges: Vec<Range<u64>>,
-    dummy: PhantomData<T>
-}
-
-struct RangeListIterator<'a, T:AlmanacType> {
-    vec_iter:std::slice::Iter<'a, Range<u64>>,
-    current_range:Option<Range<u64>>,
-    dummy: PhantomData<T>
+    ranges: Vec<Range<T>>
 }
 
 impl<T:AlmanacType> RangeList<T> {
     // create single-valued ranges: [3,5,11] -> [3..4, 5..6, 11..12]
     fn create_single_valued_ranges(single_values: &Vec<T>) -> Self {
-        let mut vec:Vec<Range<u64>> = Vec::new();
+        let mut vec:Vec<Range<T>> = Vec::new();
         for t in single_values {
-            let i = t.to_u64();
-            vec.push(i .. i+1);
+            vec.push(*t .. T::from_u64(t.to_u64()+1));
         }
-        Self { ranges: vec, dummy:PhantomData }
+        Self { ranges: vec }
     }
 
     // create real ranges: [(3,5),(7,9),(11,12)] -> [3..5, 7..9, 11..12]
     fn create_real_ranges(ranges: &Vec<Range<T>>) -> Self {
-        let mut vec:Vec<Range<u64>> = Vec::new();
-        for range in ranges {
-            vec.push(range.start.to_u64() .. range.end.to_u64());
-        }
-        Self { ranges: vec, dummy:PhantomData }
+        Self { ranges: ranges.clone() }
     }
 
     fn new() -> Self {
-        Self { ranges: Vec::new(), dummy:PhantomData }
+        Self { ranges: Vec::new() }
     }
 
-    fn iter(&self) -> RangeListIterator<T> {
-        RangeListIterator { vec_iter:self.ranges.iter(), current_range:None, dummy:PhantomData }
-    }
-
-}
-
-impl<T:AlmanacType> Iterator for RangeListIterator<'_, T> {
-    type Item = T;
-    fn next(&mut self) -> Option<<Self as Iterator>::Item> {
-        let mut loopcnt = 0;
-        loop {
-            if self.current_range.is_none() {
-                match self.vec_iter.next() {
-                    Some(range) => { self.current_range = Some(range.clone()) }
-                    None => { return None; } // end of list of ranges
-                }
+    fn to_vec(&self) -> Vec<T> {
+        let mut vec = Vec::new();
+        for range in &self.ranges {
+            for value in range.start.to_u64()..range.end.to_u64() {
+                vec.push(T::from_u64(value));
             }
-            match self.current_range.as_mut().unwrap().next() {
-                Some(t) => return Some(T::from_u64(t)),
-                None => { self.current_range = None }
-            };
-            // just to make sure to avoid endless loop
-            loopcnt += 1;
-            if loopcnt > 2 { panic!("This should not happen"); }
         }
+        vec
     }
+
+    fn to_sorted_vec(&self) -> Vec<T> {
+        let mut vec = self.to_vec();
+        vec.sort_unstable();
+        vec
+    }
+
+    fn min(&self) -> Option<T> {
+        let mut current_min = None;
+        for range in &self.ranges {
+            current_min = match current_min {
+              None => Some(range.start),
+              Some(current) => Some(min(current, range.start))
+            }
+//            if current_min.is_none() {
+//                current_min = Some(range.start);
+//            } else {
+//                current_min = Some(min(current_min, range.start));
+//            }
+        }
+
+        current_min
+    }
+
 }
 
 #[test]
 fn test_range_list() {
     let range_list1 = RangeList::create_single_valued_ranges(&[Seed(3), Seed(5), Seed(11)].to_vec());
-    assert_eq!(range_list1.iter().collect::<Vec<Seed>>(), vec![Seed(3), Seed(5), Seed(11)]);
-    //for item in range_list1 {  fails: value used here after move
-    //    println!("{}", item.to_u64());
-    //}
+    assert_eq!(range_list1.ranges, vec![Seed(3)..Seed(4), Seed(5)..Seed(6), Seed(11)..Seed(12)]);
+    assert_eq!(range_list1.to_vec(), vec![Seed(3), Seed(5), Seed(11)]);
 
     let range_list2 = RangeList::create_real_ranges(&[Seed(3)..Seed(5), Seed(7)..Seed(9), Seed(11)..Seed(12)].to_vec());
-    assert_eq!(range_list2.iter().collect::<Vec<Seed>>(), vec![Seed(3), Seed(4), Seed(7), Seed(8), Seed(11)]);
+    assert_eq!(range_list2.ranges, vec![Seed(3)..Seed(5), Seed(7)..Seed(9), Seed(11)..Seed(12)]);
+    assert_eq!(range_list2.to_vec(), vec![Seed(3),Seed(4), Seed(7), Seed(8), Seed(11)]);
 
+    let range_list3 = RangeList::create_real_ranges(&[Seed(8)..Seed(12), Seed(4)..Seed(5), Seed(11)..Seed(12)].to_vec());
+    assert_eq!(range_list3.min().unwrap(), Seed(4));
 }
 
 
@@ -284,6 +280,58 @@ impl<Source:AlmanacType, Destination:AlmanacType> SourceToDestinationMap<Source,
         }
         return Destination::from_u64(source.to_u64());
     }
+
+    fn convert_range_list(&self, source_range_list:&RangeList<Source>) -> RangeList<Destination> {
+        let mut ranges_to_convert:RangeList<Source> = source_range_list.clone();
+        let mut ranges_to_convert_next = RangeList::<Source>::new();
+        let mut ranges_converted = RangeList::<Destination>::new();
+        for mapping_range in &self.mapping_range_list {
+            for source_range in &ranges_to_convert.ranges {
+                let conversion_result = mapping_range.convert_range(&source_range);
+                if conversion_result.before.is_some() {
+                    ranges_to_convert_next.ranges.push(conversion_result.before.unwrap());
+                }
+                if conversion_result.behind.is_some() {
+                    ranges_to_convert_next.ranges.push(conversion_result.behind.unwrap());
+                }
+                if conversion_result.mapped.is_some() {
+                    ranges_converted.ranges.push(conversion_result.mapped.unwrap());
+                }
+            }
+            ranges_to_convert = ranges_to_convert_next;
+            ranges_to_convert_next = RangeList::new();
+        }
+
+        // now use identity transformation for the not-yet-converted values
+        for source_range in &ranges_to_convert.ranges {
+            ranges_converted.ranges.push(Destination::from_u64(source_range.start.to_u64()) .. Destination::from_u64(source_range.end.to_u64()));
+        }
+
+        ranges_converted
+    }
+
+}
+
+#[test]
+fn test_convert_range_list() {
+    //  4..6 -> 14..16, 7..9 -> 27..29
+    let mappings = {
+        let mut mappings = SourceToDestinationMap::<Seed, Soil>::new();
+        mappings.add_range(Seed(4),Soil(14),2);
+        mappings.add_range(Seed(7),Soil(27),2);
+        mappings
+    };
+
+    let seeds = RangeList::create_real_ranges(&vec![Seed(0)..Seed(10)]);
+    let converted = mappings.convert_range_list(&seeds);
+
+    assert_eq!(converted.ranges,
+        vec![Soil(14)..Soil(16),
+             Soil(27)..Soil(29),
+             Soil(0)..Soil(4),
+             Soil(6)..Soil(7),
+             Soil(9)..Soil(10)]);
+
 }
 
 struct Almanac {
@@ -470,7 +518,7 @@ fn build_example_almanac(mode: BuildAlmanacMode) -> Almanac {
 fn test_example1() {
     let almanac = build_example_almanac(BuildAlmanacMode::Part1);
 
-    assert_eq!(almanac.seeds.iter().collect::<Vec<Seed>>(), vec![Seed(79), Seed(14), Seed(55), Seed(13)]);
+    assert_eq!(&almanac.seeds.ranges, &vec![Seed(79)..Seed(80), Seed(14)..Seed(15), Seed(55)..Seed(56), Seed(13)..Seed(14)]);
     assert_eq!(almanac.seed_to_soil.mapping_range_list.len(), 2);
     assert_eq!(almanac.soil_to_fertilizer.mapping_range_list.len(), 3);
     assert_eq!(almanac.fertilizer_to_water.mapping_range_list.len(), 4);
@@ -479,71 +527,29 @@ fn test_example1() {
     assert_eq!(almanac.temperature_to_humidity.mapping_range_list.len(), 2);
     assert_eq!(almanac.humidity_to_location.mapping_range_list.len(), 2);
 
-    let soils:Vec<Soil> = almanac.seeds.iter().map(
-        |seed| seed.seed_to_soil(&almanac)
-    ).collect();
-    assert_eq!(soils, vec![Soil(81), Soil(14), Soil(57), Soil(13)]);
+    let soils = almanac.seed_to_soil.convert_range_list(&almanac.seeds);
+//    assert_eq!(soils.to_vec(), vec![Soil(81), Soil(57), Soil(14), Soil(13)]);
+    assert_eq!(soils.to_sorted_vec(), vec![Soil(13), Soil(14), Soil(57), Soil(81)]);
 
-    let fertilizers:Vec<Fertilizer> = almanac.seeds.iter().map(
-        |seed| seed.seed_to_soil(&almanac)
-                   .soil_to_fertilizer(&almanac)
-    ).collect();
-    assert_eq!(fertilizers, vec![Fertilizer(81), Fertilizer(53), Fertilizer(57), Fertilizer(52)]);
+    let fertilizers = almanac.soil_to_fertilizer.convert_range_list(&soils);
+    assert_eq!(fertilizers.to_sorted_vec(), vec![Fertilizer(52), Fertilizer(53), Fertilizer(57), Fertilizer(81)]);
 
-    let water:Vec<Water> = almanac.seeds.iter().map(
-        |seed| seed.seed_to_soil(&almanac)
-                   .soil_to_fertilizer(&almanac)
-                   .fertilizer_to_water(&almanac)
-    ).collect();
-    assert_eq!(water, vec![Water(81), Water(49), Water(53), Water(41)]);
+    let water = almanac.fertilizer_to_water.convert_range_list(&fertilizers);
+    assert_eq!(water.to_sorted_vec(), vec![Water(41), Water(49), Water(53), Water(81)]);
 
-    let lights:Vec<Light> = almanac.seeds.iter().map(
-        |seed| seed.seed_to_soil(&almanac)
-                   .soil_to_fertilizer(&almanac)
-                   .fertilizer_to_water(&almanac)
-                   .water_to_light(&almanac)
-    ).collect();
-    assert_eq!(lights, vec![Light(74), Light(42), Light(46), Light(34)]);
+    let lights = almanac.water_to_light.convert_range_list(&water);
+    assert_eq!(lights.to_sorted_vec(), vec![Light(34), Light(42), Light(46), Light(74)]);
 
-    let temperatures:Vec<Temperature> = almanac.seeds.iter().map(
-        |seed| seed.seed_to_soil(&almanac)
-                   .soil_to_fertilizer(&almanac)
-                   .fertilizer_to_water(&almanac)
-                   .water_to_light(&almanac)
-                   .light_to_temperature(&almanac)
-    ).collect();
-    assert_eq!(temperatures, vec![Temperature(78), Temperature(42), Temperature(82), Temperature(34)]);
+    let temperatures = almanac.light_to_temperature.convert_range_list(&lights);
+    assert_eq!(temperatures.to_sorted_vec(), vec![Temperature(34), Temperature(42), Temperature(78), Temperature(82)]);
 
-    let humidities:Vec<Humidity> = almanac.seeds.iter().map(
-        |seed| seed.seed_to_soil(&almanac)
-                   .soil_to_fertilizer(&almanac)
-                   .fertilizer_to_water(&almanac)
-                   .water_to_light(&almanac)
-                   .light_to_temperature(&almanac)
-                   .temperature_to_humidity(&almanac)
-    ).collect();
-    assert_eq!(humidities, vec![Humidity(78), Humidity(43), Humidity(82), Humidity(35)]);
+    let humidities = almanac.temperature_to_humidity.convert_range_list(&temperatures);
+    assert_eq!(humidities.to_sorted_vec(), vec![Humidity(35), Humidity(43), Humidity(78), Humidity(82)]);
 
-    let locations:Vec<Location> = almanac.seeds.iter().map(
-        |seed| seed.seed_to_soil(&almanac)
-                   .soil_to_fertilizer(&almanac)
-                   .fertilizer_to_water(&almanac)
-                   .water_to_light(&almanac)
-                   .light_to_temperature(&almanac)
-                   .temperature_to_humidity(&almanac)
-                   .humidity_to_location(&almanac)
-    ).collect();
-    assert_eq!(locations, vec![Location(82), Location(43), Location(86), Location(35)]);
+    let locations = almanac.humidity_to_location.convert_range_list(&humidities);
+    assert_eq!(locations.to_sorted_vec(), vec![Location(35), Location(43), Location(82), Location(86)]);
 
-    let lowest_location = almanac.seeds.iter().map(
-        |seed| seed.seed_to_soil(&almanac)
-                   .soil_to_fertilizer(&almanac)
-                   .fertilizer_to_water(&almanac)
-                   .water_to_light(&almanac)
-                   .light_to_temperature(&almanac)
-                   .temperature_to_humidity(&almanac)
-                   .humidity_to_location(&almanac)
-    ).min().unwrap();
+    let lowest_location = locations.min().unwrap();
     assert_eq!(lowest_location, Location(35));
 
 }
@@ -558,7 +564,7 @@ fn test_example2() {
     //seed_val_exp.extend(55..55+13);
     //let seed_exp:Vec<Seed> = seed_val_exp.iter().map(|x| Seed(x)).collect();
     let seed_exp:Vec<Seed> = (79..79+14).chain(55..55+13).map(|x| Seed(x)).collect();
-    assert_eq!(almanac.seeds.iter().collect::<Vec<Seed>>(), seed_exp);
+    assert_eq!(almanac.seeds.to_vec(), seed_exp);
     assert_eq!(almanac.seed_to_soil.mapping_range_list.len(), 2);
     assert_eq!(almanac.soil_to_fertilizer.mapping_range_list.len(), 3);
     assert_eq!(almanac.fertilizer_to_water.mapping_range_list.len(), 4);
@@ -568,7 +574,7 @@ fn test_example2() {
     assert_eq!(almanac.humidity_to_location.mapping_range_list.len(), 2);
 
     // check fourth value
-    let seed = almanac.seeds.iter().skip(3).next().unwrap();
+    let seed = almanac.seeds.to_vec()[3];
     assert_eq!(seed, Seed(82));
 
     let soil = seed.seed_to_soil(&almanac);
@@ -592,15 +598,14 @@ fn test_example2() {
     let location = humidity.humidity_to_location(&almanac);
     assert_eq!(location, Location(46));
 
-    let lowest_location = almanac.seeds.iter().map(
-        |seed| seed.seed_to_soil(&almanac)
-                   .soil_to_fertilizer(&almanac)
-                   .fertilizer_to_water(&almanac)
-                   .water_to_light(&almanac)
-                   .light_to_temperature(&almanac)
-                   .temperature_to_humidity(&almanac)
-                   .humidity_to_location(&almanac)
-    ).min().unwrap();
+    let soils = almanac.seed_to_soil.convert_range_list(&almanac.seeds);
+    let fertilizers = almanac.soil_to_fertilizer.convert_range_list(&soils);
+    let water = almanac.fertilizer_to_water.convert_range_list(&fertilizers);
+    let lights = almanac.water_to_light.convert_range_list(&water);
+    let temperatures = almanac.light_to_temperature.convert_range_list(&lights);
+    let humidities = almanac.temperature_to_humidity.convert_range_list(&temperatures);
+    let locations = almanac.humidity_to_location.convert_range_list(&humidities);
+    let lowest_location = locations.min().unwrap();
     assert_eq!(lowest_location, Location(46));
 
 }
@@ -624,18 +629,22 @@ pub fn part1and2() {
 
         let start = Instant::now();
 
-        let seed_count = almanac.seeds.iter().count();
-        println!("Day 5, {:#?}: Number of seeds is {} ({} seconds)", mode, seed_count, start.elapsed().as_secs());
+        println!("Day 5, {:#?}: Number of seed ranges is {} ({} seconds)", mode, almanac.seeds.ranges.len(), start.elapsed().as_secs());
 
-        let lowest_location = almanac.seeds.iter().map(
-            |seed| seed.seed_to_soil(&almanac)
-                       .soil_to_fertilizer(&almanac)
-                       .fertilizer_to_water(&almanac)
-                       .water_to_light(&almanac)
-                       .light_to_temperature(&almanac)
-                       .temperature_to_humidity(&almanac)
-                       .humidity_to_location(&almanac)
-        ).min().unwrap();
+        let soils = almanac.seed_to_soil.convert_range_list(&almanac.seeds);
+
+        println!("Day 5, {:#?}: Number of soil ranges is {} ({} seconds)", mode, soils.ranges.len(), start.elapsed().as_secs());
+
+        let fertilizers = almanac.soil_to_fertilizer.convert_range_list(&soils);
+        let water = almanac.fertilizer_to_water.convert_range_list(&fertilizers);
+        let lights = almanac.water_to_light.convert_range_list(&water);
+        let temperatures = almanac.light_to_temperature.convert_range_list(&lights);
+        let humidities = almanac.temperature_to_humidity.convert_range_list(&temperatures);
+        let locations = almanac.humidity_to_location.convert_range_list(&humidities);
+
+        println!("Day 5, {:#?}: Number of location ranges is {} ({} seconds)", mode, locations.ranges.len(), start.elapsed().as_secs());
+
+        let lowest_location = locations.min().unwrap();
 
         println!("Day 5, {:#?}: Lowest location is {} ({} seconds)", mode, lowest_location.to_u64(), start.elapsed().as_secs());
     }
