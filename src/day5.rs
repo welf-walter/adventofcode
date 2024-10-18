@@ -626,7 +626,7 @@ fn test_example2() {
 use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
-use std::time::Instant;
+//use std::time::Instant;
 
 pub fn part1and2() {
 
@@ -640,13 +640,13 @@ pub fn part1and2() {
         let file_rule = parsed.next().unwrap();
         let almanac = build_almanac(file_rule, mode);
 
-        let start = Instant::now();
+        //let start = Instant::now();
 
-        println!("Day 5, {:#?}: Number of seed ranges is {} ({} seconds)", mode, almanac.seeds.ranges.len(), start.elapsed().as_secs());
+        //println!("Day 5, {:#?}: Number of seed ranges is {} ({} seconds)", mode, almanac.seeds.ranges.len(), start.elapsed().as_secs());
 
         let soils = almanac.seed_to_soil.convert_range_list(&almanac.seeds);
 
-        println!("Day 5, {:#?}: Number of soil ranges is {} ({} seconds)", mode, soils.ranges.len(), start.elapsed().as_secs());
+        //println!("Day 5, {:#?}: Number of soil ranges is {} ({} seconds)", mode, soils.ranges.len(), start.elapsed().as_secs());
 
         let fertilizers = almanac.soil_to_fertilizer.convert_range_list(&soils);
         let water = almanac.fertilizer_to_water.convert_range_list(&fertilizers);
@@ -655,10 +655,10 @@ pub fn part1and2() {
         let humidities = almanac.temperature_to_humidity.convert_range_list(&temperatures);
         let locations = almanac.humidity_to_location.convert_range_list(&humidities);
 
-        println!("Day 5, {:#?}: Number of location ranges is {} ({} seconds)", mode, locations.ranges.len(), start.elapsed().as_secs());
+        //println!("Day 5, {:#?}: Number of location ranges is {} ({} seconds)", mode, locations.ranges.len(), start.elapsed().as_secs());
 
         let lowest_location = locations.min().unwrap();
 
-        println!("Day 5, {:#?}: Lowest location is {} ({} seconds)", mode, lowest_location.to_u64(), start.elapsed().as_secs());
+        println!("Day 5, {:#?}: Lowest location is {}", mode, lowest_location.to_u64());
     }
 }
