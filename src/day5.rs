@@ -43,58 +43,58 @@ struct Humidity(u64);
 #[derive(PartialEq,Debug,Clone,Copy,Eq,PartialOrd,Ord)]
 struct Location(u64);
 
-trait AlmanacTypeTrait {
+trait AlmanacType {
     fn to_u64(&self) -> u64;
     fn from_u64(value:u64) -> Self;
 }
 
-impl AlmanacTypeTrait for Seed {
+impl AlmanacType for Seed {
     fn to_u64(&self) -> u64 { self.0 }
     fn from_u64(value:u64) -> Self { Self(value )}
 }
 
-impl AlmanacTypeTrait for Soil {
+impl AlmanacType for Soil {
     fn to_u64(&self) -> u64 { self.0 }
     fn from_u64(value:u64) -> Self { Self(value )}
 }
 
-impl AlmanacTypeTrait for Fertilizer {
+impl AlmanacType for Fertilizer {
     fn to_u64(&self) -> u64 { self.0 }
     fn from_u64(value:u64) -> Self { Self(value )}
 }
 
-impl AlmanacTypeTrait for Water {
+impl AlmanacType for Water {
     fn to_u64(&self) -> u64 { self.0 }
     fn from_u64(value:u64) -> Self { Self(value )}
 }
 
-impl AlmanacTypeTrait for Light {
+impl AlmanacType for Light {
     fn to_u64(&self) -> u64 { self.0 }
     fn from_u64(value:u64) -> Self { Self(value )}
 }
 
-impl AlmanacTypeTrait for Temperature {
+impl AlmanacType for Temperature {
     fn to_u64(&self) -> u64 { self.0 }
     fn from_u64(value:u64) -> Self { Self(value )}
 }
 
-impl AlmanacTypeTrait for Humidity {
+impl AlmanacType for Humidity {
     fn to_u64(&self) -> u64 { self.0 }
     fn from_u64(value:u64) -> Self { Self(value )}
 }
 
-impl AlmanacTypeTrait for Location {
+impl AlmanacType for Location {
     fn to_u64(&self) -> u64 { self.0 }
     fn from_u64(value:u64) -> Self { Self(value )}
 }
 
-struct MappingRange<Destination:AlmanacTypeTrait, Source:AlmanacTypeTrait> {
+struct MappingRange<Destination:AlmanacType, Source:AlmanacType> {
     destination_range_start: Destination,
     source_range_start: Source,
     range_length: u64
 }
 
-impl<Destination:AlmanacTypeTrait, Source:AlmanacTypeTrait> MappingRange<Destination, Source> {
+impl<Destination:AlmanacType, Source:AlmanacType> MappingRange<Destination, Source> {
     fn is_source_in_range(&self, source:Source) -> bool {
         source.to_u64() >= self.source_range_start.to_u64()
         &&
@@ -127,18 +127,18 @@ fn test_mapping_range() {
 use std::ops::Range;
 use std::marker::PhantomData;
 // A list of ranges, e.g. [3..5, 7..9, 11..12] = [3,4,7,8,11]
-struct RangeList<T:AlmanacTypeTrait+Copy> {
+struct RangeList<T:AlmanacType+Copy> {
     ranges: Vec<Range<u64>>,
     dummy: PhantomData<T>
 }
 
-struct RangeListIterator<'a, T:AlmanacTypeTrait> {
+struct RangeListIterator<'a, T:AlmanacType> {
     vec_iter:std::slice::Iter<'a, Range<u64>>,
     current_range:Option<Range<u64>>,
     dummy: PhantomData<T>
 }
 
-impl<T:AlmanacTypeTrait+Copy> RangeList<T> {
+impl<T:AlmanacType+Copy> RangeList<T> {
     // create single-valued ranges: [3,5,11] -> [3..4, 5..6, 11..12]
     fn create_single_valued_ranges(single_values: &Vec<T>) -> Self {
         let mut vec:Vec<Range<u64>> = Vec::new();
@@ -168,7 +168,7 @@ impl<T:AlmanacTypeTrait+Copy> RangeList<T> {
 
 }
 
-impl<T:AlmanacTypeTrait+Copy> Iterator for RangeListIterator<'_, T> {
+impl<T:AlmanacType+Copy> Iterator for RangeListIterator<'_, T> {
     type Item = T;
     fn next(&mut self) -> Option<<Self as Iterator>::Item> {
         let mut loopcnt = 0;
@@ -204,11 +204,11 @@ fn test_range_list() {
 }
 
 
-struct SourceToDestinationMap<Source:AlmanacTypeTrait, Destination:AlmanacTypeTrait> {
+struct SourceToDestinationMap<Source:AlmanacType, Destination:AlmanacType> {
     mapping_range_list:Vec<MappingRange<Destination, Source>>
 }
 
-impl<Source:AlmanacTypeTrait+Copy, Destination:AlmanacTypeTrait+Copy> SourceToDestinationMap<Source, Destination> {
+impl<Source:AlmanacType+Copy, Destination:AlmanacType+Copy> SourceToDestinationMap<Source, Destination> {
     fn new() -> Self {
         SourceToDestinationMap { mapping_range_list:Vec::new() }
     }
@@ -268,7 +268,7 @@ impl Humidity    { fn    humidity_to_location(&self, almanac:&Almanac) -> Locati
 
 use pest::iterators::Pair;
 
-fn build_source_destination_map<Source:AlmanacTypeTrait+Copy, Destination:AlmanacTypeTrait+Copy>
+fn build_source_destination_map<Source:AlmanacType+Copy, Destination:AlmanacType+Copy>
     (mapping_rule:Pair<'_, Rule>) -> SourceToDestinationMap<Source, Destination> {
         let mut sd_map = SourceToDestinationMap::new();
         for list_of_triples in mapping_rule.into_inner() {
