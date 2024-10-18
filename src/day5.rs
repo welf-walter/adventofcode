@@ -19,31 +19,31 @@ fn test_parse() {
 
 }
 
-#[derive(PartialEq,Debug,Clone,Copy)]
+#[derive(PartialEq,Debug,Clone,Copy,Eq,PartialOrd,Ord)]
 struct Seed(u64);
 
-#[derive(PartialEq,Debug,Clone,Copy)]
+#[derive(PartialEq,Debug,Clone,Copy,Eq,PartialOrd,Ord)]
 struct Soil(u64);
 
-#[derive(PartialEq,Debug,Clone,Copy)]
+#[derive(PartialEq,Debug,Clone,Copy,Eq,PartialOrd,Ord)]
 struct Fertilizer(u64);
 
-#[derive(PartialEq,Debug,Clone,Copy)]
+#[derive(PartialEq,Debug,Clone,Copy,Eq,PartialOrd,Ord)]
 struct Water(u64);
 
-#[derive(PartialEq,Debug,Clone,Copy)]
+#[derive(PartialEq,Debug,Clone,Copy,Eq,PartialOrd,Ord)]
 struct Light(u64);
 
-#[derive(PartialEq,Debug,Clone,Copy)]
+#[derive(PartialEq,Debug,Clone,Copy,Eq,PartialOrd,Ord)]
 struct Temperature(u64);
 
-#[derive(PartialEq,Debug,Clone,Copy)]
+#[derive(PartialEq,Debug,Clone,Copy,Eq,PartialOrd,Ord)]
 struct Humidity(u64);
 
 #[derive(PartialEq,Debug,Clone,Copy,Eq,PartialOrd,Ord)]
 struct Location(u64);
 
-trait AlmanacType {
+trait AlmanacType: Copy+Ord{
     fn to_u64(&self) -> u64;
     fn from_u64(value:u64) -> Self;
 }
@@ -96,9 +96,9 @@ struct MappingRange<Destination:AlmanacType, Source:AlmanacType> {
 
 impl<Destination:AlmanacType, Source:AlmanacType> MappingRange<Destination, Source> {
     fn is_source_in_range(&self, source:Source) -> bool {
-        source.to_u64() >= self.source_range_start.to_u64()
+        source >= self.source_range_start
         &&
-        source.to_u64() < self.source_range_start.to_u64() + self.range_length
+        source < Source::from_u64(self.source_range_start.to_u64() + self.range_length)
     }
 
     fn convert(&self, source:Source) -> Destination {
@@ -106,6 +106,7 @@ impl<Destination:AlmanacType, Source:AlmanacType> MappingRange<Destination, Sour
             self.destination_range_start.to_u64() +
             ( source.to_u64() - self.source_range_start.to_u64() ))
     }
+
 }
 
 #[test]
@@ -121,6 +122,7 @@ fn test_mapping_range() {
 
     assert_eq!(range.convert(Seed(98)), Soil(50));
     assert_eq!(range.convert(Seed(99)), Soil(51));
+
 }
 
 
@@ -225,8 +227,7 @@ impl<Source:AlmanacType+Copy, Destination:AlmanacType+Copy> SourceToDestinationM
                 return range.convert(source);
             }
         }
-        let sourceval = source.to_u64();
-        return Destination::from_u64(sourceval);
+        return Destination::from_u64(source.to_u64());
     }
 }
 
