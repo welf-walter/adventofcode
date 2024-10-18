@@ -105,6 +105,8 @@ struct MappingRangeConversionResult<Destination:AlmanacType, Source:AlmanacType>
 }
 
 impl<Destination:AlmanacType, Source:AlmanacType> MappingRange<Destination, Source> {
+
+    #[cfg(test)]
     fn is_source_in_range(&self, source:Source) -> bool {
         source >= self.source_range_start
         &&
@@ -207,6 +209,7 @@ impl<T:AlmanacType> RangeList<T> {
         Self { ranges: Vec::new() }
     }
 
+    #[cfg(test)]
     fn to_vec(&self) -> Vec<T> {
         let mut vec = Vec::new();
         for range in &self.ranges {
@@ -217,6 +220,7 @@ impl<T:AlmanacType> RangeList<T> {
         vec
     }
 
+    #[cfg(test)]
     fn to_sorted_vec(&self) -> Vec<T> {
         let mut vec = self.to_vec();
         vec.sort_unstable();
@@ -272,6 +276,8 @@ impl<Source:AlmanacType, Destination:AlmanacType> SourceToDestinationMap<Source,
             range_length : range_length
         });
     }
+
+    #[cfg(test)]
     fn convert(&self, source:Source) -> Destination {
         for range in &self.mapping_range_list {
             if range.is_source_in_range(source) {
@@ -362,12 +368,19 @@ impl Almanac {
     }
 }
 
+#[cfg(test)]
 impl Seed        { fn            seed_to_soil(&self, almanac:&Almanac) -> Soil        {            almanac.seed_to_soil.convert(*self) } }
+#[cfg(test)]
 impl Soil        { fn      soil_to_fertilizer(&self, almanac:&Almanac) -> Fertilizer  {      almanac.soil_to_fertilizer.convert(*self) } }
+#[cfg(test)]
 impl Fertilizer  { fn     fertilizer_to_water(&self, almanac:&Almanac) -> Water       {     almanac.fertilizer_to_water.convert(*self) } }
+#[cfg(test)]
 impl Water       { fn          water_to_light(&self, almanac:&Almanac) -> Light       {          almanac.water_to_light.convert(*self) } }
+#[cfg(test)]
 impl Light       { fn    light_to_temperature(&self, almanac:&Almanac) -> Temperature {    almanac.light_to_temperature.convert(*self) } }
+#[cfg(test)]
 impl Temperature { fn temperature_to_humidity(&self, almanac:&Almanac) -> Humidity    { almanac.temperature_to_humidity.convert(*self) } }
+#[cfg(test)]
 impl Humidity    { fn    humidity_to_location(&self, almanac:&Almanac) -> Location    {    almanac.humidity_to_location.convert(*self) } }
 
 use pest::iterators::Pair;
