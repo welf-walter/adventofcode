@@ -1,0 +1,13 @@
+// test on: https://pest.rs/#editor
+
+number = { ASCII_DIGIT + }
+
+number_list = { ( number ~ " " + ~ number ~ " " + ~ number ) }
+
+times = { "Time:" ~ " " + ~ number_list }
+distances = { "Distance:" ~ " " + ~ number_list }
+
+file = { SOI ~
+         times ~ NEWLINE ~
+         distances ~ NEWLINE ~
+         EOI }
