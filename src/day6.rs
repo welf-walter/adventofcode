@@ -111,7 +111,7 @@ fn build_example_race_list() -> Vec<Race> {
 #[test]
 fn test_parse2() {
     assert_eq!(
-        build_number_list(Day6Parser::parse(Rule::number_list, "4    15 76").unwrap().next().unwrap()), 
+        build_number_list(Day6Parser::parse(Rule::number_list, "4    15 76").unwrap().next().unwrap()),
         vec![4, 15, 76]);
 
     let race_list = build_example_race_list();
@@ -131,11 +131,22 @@ impl Race {
         let speed = charge; // in Millimeter per Millisecond
         speed * travel_time
     }
+
+    fn ways_to_win(&self) -> u32 {
+        let iter_ways_to_win =
+            (0..self.time).filter(
+                |charge| self.calculate_distance(*charge) > self.minimal_distance
+            );
+        iter_ways_to_win.count().try_into().unwrap()
+    }
 }
 #[test]
 fn test_race() {
     let races = build_example_race_list();
     let race1 = &races[0];
+    let race2 = &races[1];
+    let race3 = &races[2];
+
     assert_eq!(race1.calculate_distance(0), 0);
     assert_eq!(race1.calculate_distance(1), 6);
     assert_eq!(race1.calculate_distance(2), 10);
@@ -144,5 +155,15 @@ fn test_race() {
     assert_eq!(race1.calculate_distance(5), 10);
     assert_eq!(race1.calculate_distance(6), 6);
     assert_eq!(race1.calculate_distance(7), 0);
+
+    assert_eq!(race1.ways_to_win(), 4);
+    assert_eq!(race2.ways_to_win(), 8);
+    assert_eq!(race3.ways_to_win(), 9);
+
+    let mut number_of_ways_to_beat_the_record = 1;
+    for race in races {
+        number_of_ways_to_beat_the_record *= race.ways_to_win();
+    }
+    assert_eq!(number_of_ways_to_beat_the_record, 288);
 
 }
