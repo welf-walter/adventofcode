@@ -99,8 +99,7 @@ fn build_race_list(file_rule:Pair<'_, Rule>) -> Vec<Race> {
 fn build_example_race_list() -> Vec<Race> {
     let input = [
         "Time:      7  15   30",
-        "Distance:  9  40  200",
-        ""
+        "Distance:  9  40  200"
     ];
     let concat_input = input.join("\n");
     let mut parsed = Day6Parser::parse(Rule::file, &concat_input).unwrap();
@@ -140,6 +139,15 @@ impl Race {
         iter_ways_to_win.count().try_into().unwrap()
     }
 }
+
+fn number_of_ways_to_beat_the_record(races:Vec<Race>) -> u32 {
+    let mut number_of_ways_to_beat_the_record = 1;
+    for race in races {
+        number_of_ways_to_beat_the_record *= race.ways_to_win();
+    }
+    number_of_ways_to_beat_the_record
+}
+
 #[test]
 fn test_race() {
     let races = build_example_race_list();
@@ -160,10 +168,26 @@ fn test_race() {
     assert_eq!(race2.ways_to_win(), 8);
     assert_eq!(race3.ways_to_win(), 9);
 
-    let mut number_of_ways_to_beat_the_record = 1;
-    for race in races {
-        number_of_ways_to_beat_the_record *= race.ways_to_win();
-    }
-    assert_eq!(number_of_ways_to_beat_the_record, 288);
+    assert_eq!(number_of_ways_to_beat_the_record(races), 288);
+
+}
+
+use std::fs::File;
+use std::io::BufRead;
+use std::io::BufReader;
+//use std::time::Instant;
+
+pub fn part1() {
+
+    let file = File::open("data/day6.input").expect("Could not open data/day6.input");
+    let reader = BufReader::new(file);
+
+    let lines:Vec<String> = reader.lines().map( |line| line.unwrap() ).collect();
+    let concat_input = lines.join("\n");
+    let mut parsed = Day6Parser::parse(Rule::file, &concat_input).unwrap();
+    let file_rule = parsed.next().unwrap();
+    let races = build_race_list(file_rule);
+
+    println!("Day 6: Number of ways to beat the record is {}", number_of_ways_to_beat_the_record(races));
 
 }

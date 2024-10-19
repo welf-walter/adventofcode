@@ -17,7 +17,7 @@ struct Cli {
 fn main() {
     let args = Cli::parse();
 
-    let days = if !args.days.is_empty() { args.days } else { (1..6).collect() };
+    let days = if !args.days.is_empty() { args.days } else { (1..7).collect() };
 
     for day in days {
         match day {
@@ -26,6 +26,7 @@ fn main() {
             3=>day3::part1and2(),
             4=>day4::part1and2(),
             5=>day5::part1and2(),
+            6=>day6::part1(),
             otherday=>println!("Unknown day {}", otherday)
         }
     }
