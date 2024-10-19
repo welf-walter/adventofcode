@@ -2,12 +2,12 @@
 
 number = { ASCII_DIGIT + }
 
-number_list = { ( number ~ " " + ~ number ~ " " + ~ number ) }
+number_list = { ( number ~ (" " + ~ number )* ) }
 
 times = { "Time:" ~ " " + ~ number_list }
 distances = { "Distance:" ~ " " + ~ number_list }
 
 file = { SOI ~
-         times ~ NEWLINE ~
-         distances ~ NEWLINE ~
+         times ~ NEWLINE + ~
+         distances ~ NEWLINE * ~
          EOI }
