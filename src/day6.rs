@@ -1,6 +1,6 @@
 
-type Milliseconds = u32;
-type Millimeter = u32;
+type Milliseconds = u64;
+type Millimeter = u64;
 
 #[derive(Debug, PartialEq)]
 struct Race {
@@ -59,12 +59,12 @@ Distance:  9  40  200
 
 use pest::iterators::Pair;
 
-fn build_number_list(number_list_rule:Pair<'_, Rule>) -> Vec<u32> {
+fn build_number_list(number_list_rule:Pair<'_, Rule>) -> Vec<u64> {
     let mut numbers = Vec::new();
     for number in number_list_rule.into_inner() {
         match number.as_rule() {
             Rule::number => {
-                let number_value = number.as_str().parse::<u32>().unwrap();
+                let number_value = number.as_str().parse::<u64>().unwrap();
                 numbers.push(number_value);
             }
             _ => { println!("Unexpected {}", number); }
@@ -73,8 +73,8 @@ fn build_number_list(number_list_rule:Pair<'_, Rule>) -> Vec<u32> {
     numbers
 }
 
-fn build_with_spaces(number_rule:Pair<'_, Rule>) -> u32 {
-    number_rule.as_str().replace(" ", "").parse::<u32>().unwrap()
+fn build_with_spaces(number_rule:Pair<'_, Rule>) -> u64 {
+    number_rule.as_str().replace(" ", "").parse::<u64>().unwrap()
 }
 
 
@@ -208,7 +208,7 @@ impl Race {
         speed * travel_time
     }
 
-    fn ways_to_win(&self) -> u32 {
+    fn ways_to_win(&self) -> u64 {
         let iter_ways_to_win =
             (0..self.time).filter(
                 |charge| self.calculate_distance(*charge) > self.minimal_distance
@@ -217,7 +217,7 @@ impl Race {
     }
 }
 
-fn number_of_ways_to_beat_the_record(races:Vec<Race>) -> u32 {
+fn number_of_ways_to_beat_the_record(races:Vec<Race>) -> u64 {
     let mut number_of_ways_to_beat_the_record = 1;
     for race in races {
         number_of_ways_to_beat_the_record *= race.ways_to_win();
@@ -249,12 +249,18 @@ fn test_race() {
 
 }
 
+#[test]
+fn test_race_2() {
+    let race = build_example_race_2();
+    assert_eq!(race.ways_to_win(), 71503);
+}
+
 use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
 //use std::time::Instant;
 
-pub fn part1() {
+pub fn part1and2() {
 
     let file = File::open("data/day6.input").expect("Could not open data/day6.input");
     let reader = BufReader::new(file);
@@ -265,6 +271,13 @@ pub fn part1() {
     let file_rule = parsed.next().unwrap();
     let races = build_race_list(file_rule);
 
-    println!("Day 6: Number of ways to beat the record is {}", number_of_ways_to_beat_the_record(races));
+    println!("Day 6, part 1: Number of ways to beat the record is {}", number_of_ways_to_beat_the_record(races));
+
+    let mut parsed2 = Day6Parser::parse(Rule::file2, &concat_input).unwrap();
+    let file_rule2 = parsed2.next().unwrap();
+    let race2 = build_race2(file_rule2);
+
+    println!("Day 6, part 2: Number of ways to beat the record is {}", race2.ways_to_win());
 
 }
+
