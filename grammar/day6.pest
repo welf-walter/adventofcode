@@ -11,3 +11,13 @@ file = { SOI ~
          times ~ NEWLINE + ~
          distances ~ NEWLINE * ~
          EOI }
+
+number_with_spaces = { ( ASCII_DIGIT | " " ) + }
+
+times2 = { "Time:" ~ " " + ~ number_with_spaces }
+distances2 = { "Distance:" ~ " " + ~ number_with_spaces }
+
+file2 = { SOI ~
+         times2 ~ NEWLINE + ~
+         distances2 ~ NEWLINE * ~
+         EOI }

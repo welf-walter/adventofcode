@@ -39,6 +39,24 @@ Distance:  9  40  200
 
 }
 
+#[test]
+fn test_parse1_2() {
+    let parse1 = Day6Parser::parse(Rule::number_with_spaces, "42 15  3").unwrap().peek().unwrap();
+    assert_eq!(parse1.as_rule(), Rule::number_with_spaces);
+    assert_eq!(parse1.as_str(), "42 15  3");
+
+    assert_eq!(Day6Parser::parse(Rule::number_with_spaces, "42 15  3").unwrap().as_str(), "42 15  3");
+
+    assert!(Day6Parser::parse(Rule::times2, "Time:      7  15   30").is_ok());
+    assert!(Day6Parser::parse(Rule::distances2, "Distance:  9  40  200").is_ok());
+
+    assert!(Day6Parser::parse(Rule::file2,
+"Time:      7  15   30
+Distance:  9  40  200
+").is_ok());
+
+}
+
 use pest::iterators::Pair;
 
 fn build_number_list(number_list_rule:Pair<'_, Rule>) -> Vec<u32> {
@@ -53,6 +71,10 @@ fn build_number_list(number_list_rule:Pair<'_, Rule>) -> Vec<u32> {
         }
     }
     numbers
+}
+
+fn build_with_spaces(number_rule:Pair<'_, Rule>) -> u32 {
+    number_rule.as_str().replace(" ", "").parse::<u32>().unwrap()
 }
 
 
@@ -95,6 +117,37 @@ fn build_race_list(file_rule:Pair<'_, Rule>) -> Vec<Race> {
     race_list
 }
 
+fn build_race2(file_rule:Pair<'_, Rule>) -> Race {
+    let mut time = 0;
+    let mut dist = 0;
+
+    for entry in file_rule.into_inner() {
+        match entry.as_rule() {
+            Rule::times2 => {
+                for rule in entry.into_inner() {
+                    match rule.as_rule() {
+                        Rule::number_with_spaces => { time = build_with_spaces(rule); },
+                        _ => unreachable!(),
+                    }
+                }
+            },
+            Rule::distances2 => {
+                for rule in entry.into_inner() {
+                    match rule.as_rule() {
+                        Rule::number_with_spaces => { dist = build_with_spaces(rule); },
+                        _ => unreachable!(),
+                    }
+                }
+            },
+            Rule::EOI => (),
+            _ => unreachable!(),
+        }
+    }
+
+    Race { time: time, minimal_distance: dist }
+
+}
+
 #[cfg(test)]
 fn build_example_race_list() -> Vec<Race> {
     let input = [
@@ -105,6 +158,18 @@ fn build_example_race_list() -> Vec<Race> {
     let mut parsed = Day6Parser::parse(Rule::file, &concat_input).unwrap();
     let file_rule = parsed.next().unwrap();
     build_race_list(file_rule)
+}
+
+#[cfg(test)]
+fn build_example_race_2() -> Race {
+    let input = [
+        "Time:      7  15   30",
+        "Distance:  9  40  200"
+    ];
+    let concat_input = input.join("\n");
+    let mut parsed = Day6Parser::parse(Rule::file2, &concat_input).unwrap();
+    let file_rule = parsed.next().unwrap();
+    build_race2(file_rule)
 }
 
 #[test]
@@ -118,6 +183,18 @@ fn test_parse2() {
         vec![Race { time: 7,  minimal_distance: 9 },
              Race { time: 15, minimal_distance: 40 },
              Race { time: 30, minimal_distance: 200 }]);
+
+}
+
+#[test]
+fn test_parse2_2() {
+    assert_eq!(
+        build_with_spaces(Day6Parser::parse(Rule::number_with_spaces, "4    15 76").unwrap().next().unwrap()),
+        41576);
+
+    let race = build_example_race_2();
+    assert_eq!(race,
+        Race { time: 71530,  minimal_distance: 940200 });
 
 }
 
