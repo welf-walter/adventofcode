@@ -3,7 +3,7 @@
 /// Card
 //////////////////////////////////////////
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 enum Card {
     A,
     K,
@@ -140,4 +140,97 @@ fn test_hand() {
     assert_eq!(Hand::from_str("32T3K"), Hand{cards:[Card::_3, Card::_2, Card::T, Card::_3, Card::K]});
     assert_eq!(Hand::from_str("32T3K").to_char5(), ['3', '2', 'T', '3', 'K']);
     assert_eq!(Hand::from_str("32T3K").to_string(), "32T3K");
+}
+
+//////////////////////////////////////////
+/// Hand Type
+//////////////////////////////////////////
+
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+enum HandType {
+    HighCard,
+    OnePair,
+    TwoPair,
+    ThreeOfAKind,
+    FullHouse,
+    FourOfAKind,
+    FiveOfAKind
+}
+
+impl HandType {
+    fn of(hand:&Hand) -> Self {
+        let mut cards = hand.cards.clone();
+        cards.sort();
+
+        if cards[0] == cards[1] &&
+           cards[1] == cards[2] &&
+           cards[2] == cards[3] &&
+           cards[3] == cards[4]
+        { return HandType::FiveOfAKind };
+
+        if (cards[0] == cards[1] &&
+            cards[1] == cards[2] &&
+            cards[2] == cards[3] &&
+            cards[3] != cards[4]) ||
+           (cards[0] != cards[1] &&
+            cards[1] == cards[2] &&
+            cards[2] == cards[3] &&
+            cards[3] == cards[4])
+        { return HandType::FourOfAKind };
+
+        if (cards[0] == cards[1] &&
+            cards[1] == cards[2] &&
+            cards[2] != cards[3] &&
+            cards[3] == cards[4]) ||
+           (cards[0] == cards[1] &&
+            cards[1] != cards[2] &&
+            cards[2] == cards[3] &&
+            cards[3] == cards[4])
+        { return HandType::FullHouse };
+
+        if (cards[0] == cards[1] &&
+            cards[1] == cards[2] &&
+            cards[2] != cards[3] &&
+            cards[3] != cards[4]) ||
+           (cards[0] != cards[1] &&
+            cards[1] == cards[2] &&
+            cards[2] == cards[3] &&
+            cards[3] != cards[4]) ||
+           (cards[0] != cards[1] &&
+            cards[1] != cards[2] &&
+            cards[2] == cards[3] &&
+            cards[3] == cards[4])
+        { return HandType::ThreeOfAKind };
+
+        if (cards[0] == cards[1] && cards[2] == cards[3])
+        || (cards[0] == cards[1] && cards[3] == cards[4])
+        || (cards[1] == cards[2] && cards[3] == cards[4])
+        { return HandType::TwoPair };
+
+        if (cards[0] == cards[1])
+        || (cards[1] == cards[2])
+        || (cards[2] == cards[3])
+        || (cards[3] == cards[4])
+        { return HandType::OnePair };
+
+        if cards[0] != cards[1] &&
+           cards[1] != cards[2] &&
+           cards[2] != cards[3] &&
+           cards[3] != cards[4]
+        { return HandType::HighCard };
+
+        unreachable!();
+    }
+}
+
+#[test]
+fn test_hand_type() {
+    assert!(HandType::FullHouse < HandType::FourOfAKind);
+    assert_eq!(HandType::of(&Hand::from_str("AAAAA")), HandType::FiveOfAKind);
+    assert_eq!(HandType::of(&Hand::from_str("AA8AA")), HandType::FourOfAKind);
+    assert_eq!(HandType::of(&Hand::from_str("23332")), HandType::FullHouse);
+    assert_eq!(HandType::of(&Hand::from_str("TTT98")), HandType::ThreeOfAKind);
+    assert_eq!(HandType::of(&Hand::from_str("23432")), HandType::TwoPair);
+    assert_eq!(HandType::of(&Hand::from_str("A23A4")), HandType::OnePair);
+    assert_eq!(HandType::of(&Hand::from_str("23456")), HandType::HighCard);
 }
