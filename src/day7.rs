@@ -234,3 +234,44 @@ fn test_hand_type() {
     assert_eq!(HandType::of(&Hand::from_str("A23A4")), HandType::OnePair);
     assert_eq!(HandType::of(&Hand::from_str("23456")), HandType::HighCard);
 }
+
+//////////////////////////////////////////
+/// Hand Order
+//////////////////////////////////////////
+
+impl Ord for Hand {
+    fn cmp(&self, other: &Self) -> Ordering {
+        // different hand type?
+        //println!("{} vs. {}: {:?}",self.to_string(), other.to_string(), HandType::of(self).cmp(&HandType::of(other)));
+        match HandType::of(self).cmp(&HandType::of(other)) {
+            Ordering::Less => { return Ordering::Less; }
+            Ordering::Equal => {}
+            Ordering::Greater => { return Ordering::Greater; }
+        }
+        for index in 0..4 {
+            match self.cards[index].cmp(&other.cards[index]) {
+                Ordering::Less => { return Ordering::Less; }
+                Ordering::Equal => {}
+                Ordering::Greater => { return Ordering::Greater; }
+            }
+        }
+        Ordering::Equal
+    }
+}
+
+impl PartialOrd for Hand {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+#[test]
+fn test_hand_order() {
+    assert!(Hand::from_str("33332") > Hand::from_str("2AAAA"));
+    assert!(Hand::from_str("77888") > Hand::from_str("77788"));
+
+    assert!(Hand::from_str("QQQJA") > Hand::from_str("T55J5"));
+    assert!(Hand::from_str("T55J5") > Hand::from_str("KK677"));
+    assert!(Hand::from_str("KK677") > Hand::from_str("KTJJT"));
+    assert!(Hand::from_str("KTJJT") > Hand::from_str("32T3K"));
+}
