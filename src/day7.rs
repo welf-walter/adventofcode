@@ -58,6 +58,7 @@ impl Card {
         }
     }
 
+    #[cfg(test)]
     fn to_char(&self) -> char {
         match self {
             Card::A => 'A',
@@ -120,6 +121,7 @@ impl Hand {
                     Card::from_char(c5.next().unwrap())]}
     }
 
+    #[cfg(test)]
     fn to_char5(&self) -> [char;5] {
         [
             self.cards[0].to_char(),
@@ -130,6 +132,7 @@ impl Hand {
         ]
     }
 
+    #[cfg(test)]
     fn to_string(&self) -> String {
         self.to_char5().iter().collect()
     }
@@ -295,7 +298,7 @@ fn get_total_winning(game:&Game) -> usize {
         let rank = index + 1;
         let hand_with_bid = &sortedgame[index];
         let product = hand_with_bid.bid as usize * rank;
-        println!("{} * {} = {}", hand_with_bid.bid, rank, product);
+        //println!("{} * {} = {}", hand_with_bid.bid, rank, product);
         sum += product;
     }
     sum
@@ -322,8 +325,6 @@ fn test_game() {
 /// Input parsing
 //////////////////////////////////////////
 
-///// Parser
-
 use pest::Parser;
 use pest_derive::Parser;
 use pest::iterators::Pair;
@@ -344,6 +345,7 @@ fn build_game(file_rule:Pair<'_, Rule>) -> Game {
                 let bid = column.as_str().parse::<u32>().unwrap();
                 game.push(HandWithBid{hand:hand.clone(), bid:bid});
             },
+            Rule::EOI => {},
             _ => { println!("Unexpected {}", column); }
         }
     }
@@ -366,5 +368,28 @@ QQQJA 483
     assert_eq!(
         build_game(Day7Parser::parse(Rule::file, input).unwrap().next().unwrap()),
         example_game());
+
+}
+
+//////////////////////////////////////////
+/// Productive usage
+//////////////////////////////////////////
+
+use std::fs::File;
+use std::io::BufRead;
+use std::io::BufReader;
+
+pub fn part1() {
+
+    let file = File::open("data/day7.input").expect("Could not open data/day7.input");
+    let reader = BufReader::new(file);
+
+    let lines:Vec<String> = reader.lines().map( |line| line.unwrap() ).collect();
+    let concat_input = lines.join("\n");
+    let mut parsed = Day7Parser::parse(Rule::file, &concat_input).unwrap();
+    let file_rule = parsed.next().unwrap();
+    let game = build_game(file_rule);
+
+    println!("Day 7, part 1: Total winnings of set of hands is {}", get_total_winning(&game));
 
 }

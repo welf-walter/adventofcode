@@ -7,5 +7,5 @@ cards = { card ~ card ~ card ~ card ~ card }
 bid = { ASCII_DIGIT + }
 
 file = { SOI ~
-         ( cards ~ " " + ~ bid ~ NEWLINE ) + ~
+         ( cards ~ " " + ~ bid ~ NEWLINE* ) + ~
          EOI }
