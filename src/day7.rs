@@ -240,7 +240,7 @@ impl Ord for Hand {
             Ordering::Equal => {}
             Ordering::Greater => { return Ordering::Greater; }
         }
-        for index in 0..4 {
+        for index in 0..5 {
             match self.cards[index].cmp(&other.cards[index]) {
                 Ordering::Less => { return Ordering::Less; }
                 Ordering::Equal => {}
@@ -267,6 +267,7 @@ fn test_hand_order() {
     assert!(Hand::from_str("T55J5") > Hand::from_str("KK677"));
     assert!(Hand::from_str("KK677") > Hand::from_str("KTJJT"));
     assert!(Hand::from_str("KTJJT") > Hand::from_str("32T3K"));
+    assert!(Hand::from_str("AAAAK") > Hand::from_str("AAAAT"));
 }
 
 #[test]
