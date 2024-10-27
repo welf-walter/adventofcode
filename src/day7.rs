@@ -104,7 +104,7 @@ fn test_card() {
 /// Hand
 //////////////////////////////////////////
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 struct Hand {
     cards:[Card;5]
 }
@@ -274,4 +274,41 @@ fn test_hand_order() {
     assert!(Hand::from_str("T55J5") > Hand::from_str("KK677"));
     assert!(Hand::from_str("KK677") > Hand::from_str("KTJJT"));
     assert!(Hand::from_str("KTJJT") > Hand::from_str("32T3K"));
+}
+
+//////////////////////////////////////////
+/// Game
+//////////////////////////////////////////
+
+#[derive(Debug, PartialEq, Eq, Clone)]
+struct HandWithBid {
+    hand:Hand,
+    bid:u32
+}
+type Game = Vec<HandWithBid>;
+
+fn get_total_winning(game:&Game) -> usize {
+    let mut sortedgame:Game = game.clone();
+    sortedgame.sort_by(|game1, game2| game1.hand.cmp(&game2.hand));
+    let mut sum = 0;
+    for index in 0 .. sortedgame.len() {
+        let rank = index + 1;
+        let hand_with_bid = &sortedgame[index];
+        let product = hand_with_bid.bid as usize * rank;
+        println!("{} * {} = {}", hand_with_bid.bid, rank, product);
+        sum += product;
+    }
+    sum
+}
+
+#[test]
+fn test_game() {
+    let game = vec![
+        HandWithBid { hand: Hand::from_str("32T3K"), bid: 765},
+        HandWithBid { hand: Hand::from_str("T55J5"), bid: 684},
+        HandWithBid { hand: Hand::from_str("KK677"), bid:  28},
+        HandWithBid { hand: Hand::from_str("KTJJT"), bid: 220},
+        HandWithBid { hand: Hand::from_str("QQQJA"), bid: 483}
+    ];
+    assert_eq!(get_total_winning(&game), 6440);
 }
