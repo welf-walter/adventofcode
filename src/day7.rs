@@ -58,7 +58,6 @@ impl Card {
         }
     }
 
-    #[cfg(test)]
     fn to_char(&self) -> char {
         match self {
             Card::A => 'A',
@@ -121,7 +120,6 @@ impl Hand {
                     Card::from_char(c5.next().unwrap())]}
     }
 
-    #[cfg(test)]
     fn to_char5(&self) -> [char;5] {
         [
             self.cards[0].to_char(),
@@ -132,7 +130,6 @@ impl Hand {
         ]
     }
 
-    #[cfg(test)]
     fn to_string(&self) -> String {
         self.to_char5().iter().collect()
     }
@@ -250,7 +247,8 @@ impl Ord for Hand {
                 Ordering::Greater => { return Ordering::Greater; }
             }
         }
-        Ordering::Equal
+        //Ordering::Equal
+        panic!("Two equal hands: {} == {}", self.to_string(), other.to_string())
     }
 }
 
@@ -269,6 +267,12 @@ fn test_hand_order() {
     assert!(Hand::from_str("T55J5") > Hand::from_str("KK677"));
     assert!(Hand::from_str("KK677") > Hand::from_str("KTJJT"));
     assert!(Hand::from_str("KTJJT") > Hand::from_str("32T3K"));
+}
+
+#[test]
+#[should_panic]
+fn test_equal_cards() {
+    let _ = Hand::from_str("T35KA") < Hand::from_str("T35KA");
 }
 
 //////////////////////////////////////////
