@@ -301,14 +301,70 @@ fn get_total_winning(game:&Game) -> usize {
     sum
 }
 
-#[test]
-fn test_game() {
-    let game = vec![
+#[cfg(test)]
+fn example_game() -> Game {
+    vec![
         HandWithBid { hand: Hand::from_str("32T3K"), bid: 765},
         HandWithBid { hand: Hand::from_str("T55J5"), bid: 684},
         HandWithBid { hand: Hand::from_str("KK677"), bid:  28},
         HandWithBid { hand: Hand::from_str("KTJJT"), bid: 220},
         HandWithBid { hand: Hand::from_str("QQQJA"), bid: 483}
-    ];
+    ]
+}
+
+#[test]
+fn test_game() {
+    let game = example_game();
     assert_eq!(get_total_winning(&game), 6440);
+}
+
+//////////////////////////////////////////
+/// Input parsing
+//////////////////////////////////////////
+
+///// Parser
+
+use pest::Parser;
+use pest_derive::Parser;
+use pest::iterators::Pair;
+
+#[derive(Parser)]
+#[grammar = "../grammar/day7.pest"]
+struct Day7Parser;
+
+fn build_game(file_rule:Pair<'_, Rule>) -> Game {
+    let mut game = Vec::new();
+    let mut hand = Hand::from_str("55555");
+    for column in file_rule.into_inner() {
+        match column.as_rule() {
+            Rule::cards => {
+                hand = Hand::from_str(column.as_str());
+            },
+            Rule::bid => {
+                let bid = column.as_str().parse::<u32>().unwrap();
+                game.push(HandWithBid{hand:hand.clone(), bid:bid});
+            },
+            _ => { println!("Unexpected {}", column); }
+        }
+    }
+    game
+}
+
+#[test]
+fn test_parse1() {
+    assert_eq!(Day7Parser::parse(Rule::cards, "32T3K").unwrap().as_str(), "32T3K");
+    assert_eq!(Day7Parser::parse(Rule::bid, "765").unwrap().as_str(), "765");
+
+    let input =
+"32T3K 765
+T55J5 684
+KK677 28
+KTJJT 220
+QQQJA 483
+";
+
+    assert_eq!(
+        build_game(Day7Parser::parse(Rule::file, input).unwrap().next().unwrap()),
+        example_game());
+
 }

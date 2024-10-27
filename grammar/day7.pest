@@ -1,0 +1,11 @@
+// test on: https://pest.rs/#editor
+
+card = { "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "T" | "J" | "Q" | "K" | "A" }
+
+cards = { card ~ card ~ card ~ card ~ card }
+
+bid = { ASCII_DIGIT + }
+
+file = { SOI ~
+         ( cards ~ " " + ~ bid ~ NEWLINE ) + ~
+         EOI }
