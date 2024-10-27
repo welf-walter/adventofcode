@@ -173,10 +173,8 @@ impl HandType {
 
         if (cards[0] == cards[1] &&
             cards[1] == cards[2] &&
-            cards[2] == cards[3] &&
-            cards[3] != cards[4]) ||
-           (cards[0] != cards[1] &&
-            cards[1] == cards[2] &&
+            cards[2] == cards[3]) ||
+           (cards[1] == cards[2] &&
             cards[2] == cards[3] &&
             cards[3] == cards[4])
         { return HandType::FourOfAKind };
@@ -192,16 +190,10 @@ impl HandType {
         { return HandType::FullHouse };
 
         if (cards[0] == cards[1] &&
-            cards[1] == cards[2] &&
-            cards[2] != cards[3] &&
-            cards[3] != cards[4]) ||
-           (cards[0] != cards[1] &&
-            cards[1] == cards[2] &&
-            cards[2] == cards[3] &&
-            cards[3] != cards[4]) ||
-           (cards[0] != cards[1] &&
-            cards[1] != cards[2] &&
-            cards[2] == cards[3] &&
+            cards[1] == cards[2]) ||
+           (cards[1] == cards[2] &&
+            cards[2] == cards[3]) ||
+           (cards[2] == cards[3] &&
             cards[3] == cards[4])
         { return HandType::ThreeOfAKind };
 
