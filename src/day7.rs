@@ -158,59 +158,60 @@ enum HandType {
 }
 
 impl HandType {
+
+    fn count_n_of_a_kind<const N:usize>(sorted_cards:&[Card;5]) -> u32 {
+        let mut count = 0;
+        let mut current_card = sorted_cards[0];
+        let mut equal_counter = 1;
+        for index in 1..5 {
+            if current_card == sorted_cards[index] {
+                //print!("=");
+                equal_counter += 1;
+            } else {
+                //print!("|");
+                if equal_counter == N {
+                    count += 1;
+                }
+                current_card = sorted_cards[index];
+                equal_counter = 1;
+            }
+        }
+        if equal_counter == N {
+            count += 1;
+        }
+        //println!("  {} times {} of a kind", count, N);
+        count
+    }
+
     fn of(hand:&Hand) -> Self {
         let mut cards = hand.cards.clone();
         cards.sort();
 
-        if cards[0] == cards[1] &&
-           cards[1] == cards[2] &&
-           cards[2] == cards[3] &&
-           cards[3] == cards[4]
+        if Self::count_n_of_a_kind::<5>(&cards) == 1
         { return HandType::FiveOfAKind };
 
-        if (cards[0] == cards[1] &&
-            cards[1] == cards[2] &&
-            cards[2] == cards[3]) ||
-           (cards[1] == cards[2] &&
-            cards[2] == cards[3] &&
-            cards[3] == cards[4])
+        if Self::count_n_of_a_kind::<4>(&cards) == 1
         { return HandType::FourOfAKind };
 
-        if (cards[0] == cards[1] &&
-            cards[1] == cards[2] &&
-            cards[2] != cards[3] &&
-            cards[3] == cards[4]) ||
-           (cards[0] == cards[1] &&
-            cards[1] != cards[2] &&
-            cards[2] == cards[3] &&
-            cards[3] == cards[4])
+        let count3 = Self::count_n_of_a_kind::<3>(&cards);
+        let count2 = Self::count_n_of_a_kind::<2>(&cards);
+
+        if count3 == 1 && count2 == 1
         { return HandType::FullHouse };
 
-        if (cards[0] == cards[1] &&
-            cards[1] == cards[2]) ||
-           (cards[1] == cards[2] &&
-            cards[2] == cards[3]) ||
-           (cards[2] == cards[3] &&
-            cards[3] == cards[4])
+        if count3 == 1
         { return HandType::ThreeOfAKind };
 
-        if (cards[0] == cards[1] && cards[2] == cards[3])
-        || (cards[0] == cards[1] && cards[3] == cards[4])
-        || (cards[1] == cards[2] && cards[3] == cards[4])
+        if count2 == 2
         { return HandType::TwoPair };
 
-        if (cards[0] == cards[1])
-        || (cards[1] == cards[2])
-        || (cards[2] == cards[3])
-        || (cards[3] == cards[4])
+        if count2 == 1
         { return HandType::OnePair };
 
-        if cards[0] != cards[1] &&
-           cards[1] != cards[2] &&
-           cards[2] != cards[3] &&
-           cards[3] != cards[4]
+        if Self::count_n_of_a_kind::<1>(&cards) == 5
         { return HandType::HighCard };
 
+        println!("Hand: {}", hand.to_string());
         unreachable!();
     }
 }
@@ -218,6 +219,16 @@ impl HandType {
 #[test]
 fn test_hand_type() {
     assert!(HandType::FullHouse < HandType::FourOfAKind);
+
+    assert_eq!(HandType::count_n_of_a_kind::<5>(&Hand::from_str("AAAA2").cards), 0);
+    assert_eq!(HandType::count_n_of_a_kind::<5>(&Hand::from_str("AAAAA").cards), 1);
+    assert_eq!(HandType::count_n_of_a_kind::<4>(&Hand::from_str("AAAA2").cards), 1);
+    assert_eq!(HandType::count_n_of_a_kind::<4>(&Hand::from_str("2AAAA").cards), 1);
+    assert_eq!(HandType::count_n_of_a_kind::<4>(&Hand::from_str("AAAAA").cards), 0);
+    assert_eq!(HandType::count_n_of_a_kind::<2>(&Hand::from_str("AA337").cards), 2);
+    assert_eq!(HandType::count_n_of_a_kind::<2>(&Hand::from_str("7AA33").cards), 2);
+    assert_eq!(HandType::count_n_of_a_kind::<1>(&Hand::from_str("23456").cards), 5);
+
     assert_eq!(HandType::of(&Hand::from_str("AAAAA")), HandType::FiveOfAKind);
     assert_eq!(HandType::of(&Hand::from_str("AA8AA")), HandType::FourOfAKind);
     assert_eq!(HandType::of(&Hand::from_str("23332")), HandType::FullHouse);
