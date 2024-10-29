@@ -183,7 +183,7 @@ impl HandType {
     }
 
     fn count_n_of_a_kind<const N:usize>(sorted_cards:&[Card;5]) -> u32 {
-        const OUTPUT:bool = true;
+        const OUTPUT:bool = false; // for error analysis
         let mut count = 0;
         let mut current_card = sorted_cards[0];
         if OUTPUT { print!("{}", current_card.to_char()); }
@@ -486,7 +486,7 @@ pub fn part1() {
     for part in [Part1, Part2] {
         let mut parsed = Day7Parser::parse(Rule::file, &concat_input).unwrap();
         let file_rule = parsed.next().unwrap();
-        let game = build_game(file_rule, Part1);
+        let game = build_game(file_rule, part);
 
         println!("Day 7, {:?}: Total winnings of set of hands is {}", part, get_total_winning(&game));
     }
