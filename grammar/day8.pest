@@ -1,0 +1,15 @@
+// test on: https://pest.rs/#editor
+
+WHITESPACE = { " " }
+
+instructions = { ASCII_ALPHA_UPPER + }
+
+node = { ASCII_ALPHA_UPPER ~ ASCII_ALPHA_UPPER ~ ASCII_ALPHA_UPPER }
+
+mapping = { node ~ "=" ~ "(" ~ node ~ "," ~ node ~ ")" ~ NEWLINE }
+
+file = { SOI ~
+         instructions ~ NEWLINE ~
+         NEWLINE ~
+         mapping + ~
+         EOI }

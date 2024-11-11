@@ -50,6 +50,7 @@ fn test_direction() {
 
 use std::collections::HashMap;
 
+#[derive(Debug, PartialEq)]
 struct Network {
     instructions:Vec<Direction>,
     map:HashMap<Node,(Node,Node)>
@@ -85,6 +86,52 @@ impl Network {
         }
     }
 }
+
+//////////////////////////////////////////
+/// Input parsing
+//////////////////////////////////////////
+
+use pest::Parser;
+use pest_derive::Parser;
+use pest::iterators::Pair;
+
+#[derive(Parser)]
+#[grammar = "../grammar/day8.pest"]
+struct Day8Parser;
+
+#[test]
+fn test_parse() {
+    assert_eq!(Day8Parser::parse(Rule::instructions, "LLR").unwrap().as_str(), "LLR");
+    assert_eq!(Day8Parser::parse(Rule::mapping, "AAA = (BBB, CCC)").unwrap().as_str(), "AAA = (BBB, CCC)");
+}
+
+fn build_network(file_rule:Pair<'_, Rule>) -> Network {
+    let mut network:Network = Network{instructions:Vec::new(), map:HashMap::new()};
+
+    for element in file_rule.into_inner() {
+        match element.as_rule() {
+            Rule::instructions => {
+                network.instructions = Direction::from_str(element.as_str());
+            },
+            Rule::mapping => {
+                let mut nodes = element.into_inner();
+                let from = nodes.next().unwrap().as_str();
+                let left = nodes.next().unwrap().as_str();
+                let right = nodes.next().unwrap().as_str();
+                Network::insert_into_map(&mut network.map, from, left, right);
+            }
+            Rule::EOI => {},
+            _ => { println!("Unexpected {}", element); }
+        }
+    }
+    network
+}
+
+
+
+//////////////////////////////////////////
+/// Test Business Logic
+//////////////////////////////////////////
 
 #[cfg(test)]
 fn example_network1() -> Network {
@@ -127,6 +174,21 @@ fn test_network1() {
     assert_eq!(network.walk(Node::from_str("BBB"), Right), Node::from_str("EEE"));
 
     assert_eq!(network.play(), 2);
+
+    let input =
+"RL
+
+AAA = (BBB, CCC)
+BBB = (DDD, EEE)
+CCC = (ZZZ, GGG)
+DDD = (DDD, DDD)
+EEE = (EEE, EEE)
+GGG = (GGG, GGG)
+ZZZ = (ZZZ, ZZZ)
+";
+    assert_eq!(
+        build_network(Day8Parser::parse(Rule::file, input).unwrap().next().unwrap()),
+        network);
 }
 
 #[test]
@@ -138,4 +200,15 @@ fn test_network2() {
     assert_eq!(network.walk(Node::from_str("BBB"), Right), Node::from_str("ZZZ"));
 
     assert_eq!(network.play(), 6);
+
+    let input =
+"LLR
+
+AAA = (BBB, BBB)
+BBB = (AAA, ZZZ)
+ZZZ = (ZZZ, ZZZ)
+    ";
+    assert_eq!(
+        build_network(Day8Parser::parse(Rule::file, input).unwrap().next().unwrap()),
+        network);
 }
