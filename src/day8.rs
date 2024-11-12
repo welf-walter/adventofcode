@@ -333,7 +333,7 @@ use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
 
-pub fn part1() {
+pub fn part1and2() {
 
     let file = File::open("data/day8.input").expect("Could not open data/day8.input");
     let reader = BufReader::new(file);
@@ -342,7 +342,7 @@ pub fn part1() {
     let concat_input = lines.join("\n");
     // last \n is lost. I added one more newline at the end
 
-    for part in [Part1] {
+    for part in [Part1, Part2] {
         let mut parsed = Day8Parser::parse(Rule::file, &concat_input).unwrap();
         let file_rule = parsed.next().unwrap();
         let network = build_network(file_rule, part);
