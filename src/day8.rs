@@ -19,6 +19,8 @@ enum Direction {
 use Direction::*;
 
 impl Direction {
+
+    #[cfg(test)]
     fn to_char(self) -> char {
         match self {
             Right => 'R',
@@ -222,4 +224,30 @@ ZZZ = (ZZZ, ZZZ)
     assert_eq!(
         build_network(Day8Parser::parse(Rule::file, input).unwrap().next().unwrap()),
         network);
+}
+
+//////////////////////////////////////////
+/// Productive usage
+//////////////////////////////////////////
+
+use std::fs::File;
+use std::io::BufRead;
+use std::io::BufReader;
+
+pub fn part1() {
+
+    let file = File::open("data/day8.input").expect("Could not open data/day8.input");
+    let reader = BufReader::new(file);
+
+    let lines:Vec<String> = reader.lines().map( |line| line.unwrap() ).collect();
+    let concat_input = lines.join("\n");
+    // last \n is lost. I added one more newline at the end
+
+    let mut parsed = Day8Parser::parse(Rule::file, &concat_input).unwrap();
+    let file_rule = parsed.next().unwrap();
+    let network = build_network(file_rule);
+
+    let step_count = network.play();
+    println!("Day 8: Number of steps is {}", step_count);
+
 }

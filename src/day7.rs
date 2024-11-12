@@ -475,7 +475,7 @@ use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
 
-pub fn part1() {
+pub fn part1and2() {
 
     let file = File::open("data/day7.input").expect("Could not open data/day7.input");
     let reader = BufReader::new(file);
