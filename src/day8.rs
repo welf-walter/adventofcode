@@ -1,3 +1,20 @@
+//////////////////////////////////////////
+/// Part of Day
+//////////////////////////////////////////
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+enum Part {
+    Part1,
+    Part2
+}
+
+use Part::Part1;
+use Part::Part2;
+
+//////////////////////////////////////////
+/// Node
+//////////////////////////////////////////
+
 #[derive(Eq, Hash, PartialEq, Debug, Clone, Copy)]
 struct Node(char, char, char);
 
@@ -8,7 +25,38 @@ impl Node {
         let mut iter = s.chars();
         Node(iter.next().unwrap(), iter.next().unwrap(), iter.next().unwrap())
     }
+
+    fn is_start_node(&self, part:Part) -> bool {
+        match part {
+            Part1 => self.0 == 'A' && self.1 == 'A' && self.2 == 'A',
+            Part2 =>                                   self.2 == 'A'
+        }
+    }
+
+    fn is_finish_node(&self, part:Part) -> bool {
+        match part {
+            Part1 => self.0 == 'Z' && self.1 == 'Z' && self.2 == 'Z',
+            Part2 =>                                   self.2 == 'Z'
+        }
+    }
+
 }
+
+#[test]
+fn test_node() {
+    assert_eq!(Node::from_str("AAA").is_start_node(Part1), true);
+    assert_eq!(Node::from_str("AAA").is_start_node(Part2), true);
+    assert_eq!(Node::from_str("11A").is_start_node(Part1), false);
+    assert_eq!(Node::from_str("11A").is_start_node(Part2), true);
+    assert_eq!(Node::from_str("ZZZ").is_finish_node(Part1), true);
+    assert_eq!(Node::from_str("ZZZ").is_finish_node(Part2), true);
+    assert_eq!(Node::from_str("11Z").is_finish_node(Part1), false);
+    assert_eq!(Node::from_str("11Z").is_finish_node(Part2), true);
+}
+
+//////////////////////////////////////////
+/// Direction
+//////////////////////////////////////////
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 enum Direction {
@@ -49,6 +97,10 @@ fn test_direction() {
     assert_eq!(Direction::to_char(Left), 'L');
     assert_eq!(Direction::from_str("LLR"), vec!(Left, Left, Right));
 }
+
+//////////////////////////////////////////
+/// Network
+//////////////////////////////////////////
 
 use std::collections::HashMap;
 
