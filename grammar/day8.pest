@@ -2,9 +2,9 @@
 
 WHITESPACE = { " " }
 
-instructions = { ASCII_ALPHA_UPPER + }
+instructions = { ( "R" | "L" ) + }
 
-node = { ASCII_ALPHA_UPPER ~ ASCII_ALPHA_UPPER ~ ASCII_ALPHA_UPPER }
+node = { ASCII_ALPHANUMERIC ~ ASCII_ALPHANUMERIC ~ ASCII_ALPHANUMERIC }
 
 mapping = { node ~ "=" ~ "(" ~ node ~ "," ~ node ~ ")" }
 

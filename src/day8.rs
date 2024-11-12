@@ -107,7 +107,8 @@ use std::collections::HashMap;
 #[derive(Debug, PartialEq)]
 struct Network {
     instructions:Vec<Direction>,
-    map:HashMap<Node,(Node,Node)>
+    map:HashMap<Node,(Node,Node)>,
+    start_nodes:Vec<Node>
 }
 
 impl Network {
@@ -157,10 +158,11 @@ struct Day8Parser;
 fn test_parse() {
     assert_eq!(Day8Parser::parse(Rule::instructions, "LLR").unwrap().as_str(), "LLR");
     assert_eq!(Day8Parser::parse(Rule::mapping, "AAA = (BBB, CCC)").unwrap().as_str(), "AAA = (BBB, CCC)");
+    assert_eq!(Day8Parser::parse(Rule::mapping, "11A = (11B, XXX)").unwrap().as_str(), "11A = (11B, XXX)");
 }
 
-fn build_network(file_rule:Pair<'_, Rule>) -> Network {
-    let mut network:Network = Network{instructions:Vec::new(), map:HashMap::new()};
+fn build_network(file_rule:Pair<'_, Rule>, part:Part) -> Network {
+    let mut network:Network = Network{instructions:Vec::new(), map:HashMap::new(), start_nodes:Vec::new()};
 
     for element in file_rule.into_inner() {
         match element.as_rule() {
@@ -182,6 +184,8 @@ fn build_network(file_rule:Pair<'_, Rule>) -> Network {
                 assert_eq!(right.as_rule(), Rule::node);
 
                 Network::insert_into_map(&mut network.map, from.as_str(), left.as_str(), right.as_str());
+                let from_node = Node::from_str(from.as_str());
+                if from_node.is_start_node(part) { network.start_nodes.push(from_node);};
             }
             Rule::EOI => {},
             _ => { println!("Unexpected {}", element); }
@@ -210,7 +214,8 @@ fn example_network1() -> Network {
             Network::insert_into_map(&mut map, "GGG", "GGG", "GGG");
             Network::insert_into_map(&mut map, "ZZZ", "ZZZ", "ZZZ");
             map
-        }
+        },
+        start_nodes:vec![Node::from_str("AAA")]
     }
 }
 
@@ -224,13 +229,34 @@ fn example_network2() -> Network {
             Network::insert_into_map(&mut map, "BBB", "AAA", "ZZZ");
             Network::insert_into_map(&mut map, "ZZZ", "ZZZ", "ZZZ");
             map
-        }
+        },
+        start_nodes:vec![Node::from_str("AAA")]
     }
+}
+
+#[cfg(test)]
+fn example_network3() -> Network {
+    let input =
+    "LR
+
+11A = (11B, XXX)
+11B = (XXX, 11Z)
+11Z = (11B, XXX)
+22A = (22B, XXX)
+22B = (22C, 22C)
+22C = (22Z, 22Z)
+22Z = (22B, 22B)
+XXX = (XXX, XXX)
+";
+    build_network(Day8Parser::parse(Rule::file, input).unwrap().next().unwrap(), Part2)
 }
 
 #[test]
 fn test_network1() {
     let network = example_network1();
+
+    assert_eq!(network.start_nodes, vec![Node::from_str("AAA")]);
+
     assert_eq!(network.walk(Node::from_str("AAA"), Left ), Node::from_str("BBB"));
     assert_eq!(network.walk(Node::from_str("AAA"), Right), Node::from_str("CCC"));
     assert_eq!(network.walk(Node::from_str("BBB"), Left ), Node::from_str("DDD"));
@@ -249,16 +275,18 @@ EEE = (EEE, EEE)
 GGG = (GGG, GGG)
 ZZZ = (ZZZ, ZZZ)
 ";
-    println!("left = {:?}", build_network(Day8Parser::parse(Rule::file, input).unwrap().next().unwrap()));
+    let network_built = build_network(Day8Parser::parse(Rule::file, input).unwrap().next().unwrap(), Part1);
+    println!("left = {:?}", network_built);
     println!("right = {:?}", network);
-    assert_eq!(
-        build_network(Day8Parser::parse(Rule::file, input).unwrap().next().unwrap()),
-        network);
+    assert_eq!(network_built, network);
 }
 
 #[test]
 fn test_network2() {
     let network = example_network2();
+
+    assert_eq!(network.start_nodes, vec![Node::from_str("AAA")]);
+
     assert_eq!(network.walk(Node::from_str("AAA"), Left ), Node::from_str("BBB"));
     assert_eq!(network.walk(Node::from_str("AAA"), Right), Node::from_str("BBB"));
     assert_eq!(network.walk(Node::from_str("BBB"), Left ), Node::from_str("AAA"));
@@ -273,9 +301,17 @@ AAA = (BBB, BBB)
 BBB = (AAA, ZZZ)
 ZZZ = (ZZZ, ZZZ)
 ";
-    assert_eq!(
-        build_network(Day8Parser::parse(Rule::file, input).unwrap().next().unwrap()),
-        network);
+    let network_built = build_network(Day8Parser::parse(Rule::file, input).unwrap().next().unwrap(), Part1);
+    println!("left = {:?}", network_built);
+    println!("right = {:?}", network);
+    assert_eq!(network_built, network);
+}
+
+#[test]
+fn test_network3() {
+    let network = example_network3();
+
+    assert_eq!(network.start_nodes, vec![Node::from_str("11A"), Node::from_str("22A")]);
 }
 
 //////////////////////////////////////////
@@ -297,7 +333,7 @@ pub fn part1() {
 
     let mut parsed = Day8Parser::parse(Rule::file, &concat_input).unwrap();
     let file_rule = parsed.next().unwrap();
-    let network = build_network(file_rule);
+    let network = build_network(file_rule, Part1);
 
     let step_count = network.play();
     println!("Day 8: Number of steps is {}", step_count);
