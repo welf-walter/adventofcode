@@ -4,7 +4,7 @@ struct Node(char, char, char);
 impl Node {
     fn from_str(s:&str) -> Self {
         //s.chars().collect().try_into()
-        assert_eq!(s.len(), 3);
+        if s.len() != 3 { panic!("Could not convert '{}' to node", s)};
         let mut iter = s.chars();
         Node(iter.next().unwrap(), iter.next().unwrap(), iter.next().unwrap())
     }
@@ -115,10 +115,19 @@ fn build_network(file_rule:Pair<'_, Rule>) -> Network {
             },
             Rule::mapping => {
                 let mut nodes = element.into_inner();
-                let from = nodes.next().unwrap().as_str();
-                let left = nodes.next().unwrap().as_str();
-                let right = nodes.next().unwrap().as_str();
-                Network::insert_into_map(&mut network.map, from, left, right);
+                while nodes.peek().expect("Could not peek").as_rule() == Rule::WHITESPACE { nodes.next(); }
+                let from = nodes.next().unwrap();
+                assert_eq!(from.as_rule(), Rule::node);
+
+                while nodes.peek().expect("Could not peek").as_rule() == Rule::WHITESPACE { nodes.next(); }
+                let left = nodes.next().unwrap();
+                assert_eq!(left.as_rule(), Rule::node);
+
+                while nodes.peek().expect("Could not peek").as_rule() == Rule::WHITESPACE { nodes.next(); }
+                let right = nodes.next().unwrap();
+                assert_eq!(right.as_rule(), Rule::node);
+
+                Network::insert_into_map(&mut network.map, from.as_str(), left.as_str(), right.as_str());
             }
             Rule::EOI => {},
             _ => { println!("Unexpected {}", element); }
@@ -186,6 +195,8 @@ EEE = (EEE, EEE)
 GGG = (GGG, GGG)
 ZZZ = (ZZZ, ZZZ)
 ";
+    println!("left = {:?}", build_network(Day8Parser::parse(Rule::file, input).unwrap().next().unwrap()));
+    println!("right = {:?}", network);
     assert_eq!(
         build_network(Day8Parser::parse(Rule::file, input).unwrap().next().unwrap()),
         network);
@@ -207,7 +218,7 @@ fn test_network2() {
 AAA = (BBB, BBB)
 BBB = (AAA, ZZZ)
 ZZZ = (ZZZ, ZZZ)
-    ";
+";
     assert_eq!(
         build_network(Day8Parser::parse(Rule::file, input).unwrap().next().unwrap()),
         network);

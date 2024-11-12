@@ -6,10 +6,10 @@ instructions = { ASCII_ALPHA_UPPER + }
 
 node = { ASCII_ALPHA_UPPER ~ ASCII_ALPHA_UPPER ~ ASCII_ALPHA_UPPER }
 
-mapping = { node ~ "=" ~ "(" ~ node ~ "," ~ node ~ ")" ~ NEWLINE }
+mapping = { node ~ "=" ~ "(" ~ node ~ "," ~ node ~ ")" }
 
 file = { SOI ~
          instructions ~ NEWLINE ~
          NEWLINE ~
-         mapping + ~
+         ( mapping ~ NEWLINE ) + ~
          EOI }
