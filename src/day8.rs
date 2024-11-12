@@ -124,17 +124,21 @@ impl Network {
     }
 
     // how many steps does it take to walk from AAA to ZZZ?
-    fn play(&self) -> u32 {
-        let start  = Node::from_str("AAA");
-        let finish = Node::from_str("ZZZ");
-
+    fn play(&self, part:Part) -> u32 {
         let mut steps = 0;
-        let mut node = start;
+        let mut nodes = self.start_nodes.clone();
+        let start_node_count = nodes.len();
         loop {
             for direction in &self.instructions {
-                node = self.walk(node, *direction);
                 steps += 1;
-                if node == finish {
+                let mut finish_node_count = 0;
+                for node in &mut nodes {
+                    *node = self.walk(*node, *direction);
+                    if node.is_finish_node(part) {
+                        finish_node_count += 1;
+                    }
+                }
+                if start_node_count == finish_node_count {
                     return steps;
                 }
             }
@@ -262,7 +266,7 @@ fn test_network1() {
     assert_eq!(network.walk(Node::from_str("BBB"), Left ), Node::from_str("DDD"));
     assert_eq!(network.walk(Node::from_str("BBB"), Right), Node::from_str("EEE"));
 
-    assert_eq!(network.play(), 2);
+    assert_eq!(network.play(Part1), 2);
 
     let input =
 "RL
@@ -292,7 +296,7 @@ fn test_network2() {
     assert_eq!(network.walk(Node::from_str("BBB"), Left ), Node::from_str("AAA"));
     assert_eq!(network.walk(Node::from_str("BBB"), Right), Node::from_str("ZZZ"));
 
-    assert_eq!(network.play(), 6);
+    assert_eq!(network.play(Part1), 6);
 
     let input =
 "LLR
@@ -312,6 +316,13 @@ fn test_network3() {
     let network = example_network3();
 
     assert_eq!(network.start_nodes, vec![Node::from_str("11A"), Node::from_str("22A")]);
+
+    assert_eq!(network.walk(Node::from_str("11A"), Left ), Node::from_str("11B"));
+    assert_eq!(network.walk(Node::from_str("11A"), Right), Node::from_str("XXX"));
+    assert_eq!(network.walk(Node::from_str("22A"), Left ), Node::from_str("22B"));
+    assert_eq!(network.walk(Node::from_str("22A"), Right), Node::from_str("XXX"));
+
+    assert_eq!(network.play(Part2), 6);
 }
 
 //////////////////////////////////////////
@@ -331,11 +342,13 @@ pub fn part1() {
     let concat_input = lines.join("\n");
     // last \n is lost. I added one more newline at the end
 
-    let mut parsed = Day8Parser::parse(Rule::file, &concat_input).unwrap();
-    let file_rule = parsed.next().unwrap();
-    let network = build_network(file_rule, Part1);
+    for part in [Part1] {
+        let mut parsed = Day8Parser::parse(Rule::file, &concat_input).unwrap();
+        let file_rule = parsed.next().unwrap();
+        let network = build_network(file_rule, part);
 
-    let step_count = network.play();
-    println!("Day 8: Number of steps is {}", step_count);
+        let step_count = network.play(part);
+        println!("Day 8, {:?}: Number of steps is {}", part, step_count);
+    }
 
 }
