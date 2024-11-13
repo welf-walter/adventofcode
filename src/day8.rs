@@ -26,6 +26,11 @@ impl Node {
         Node(iter.next().unwrap(), iter.next().unwrap(), iter.next().unwrap())
     }
 
+    #[cfg(test)]
+    fn to_string(&self) -> String {
+        format!("{}{}{}", self.0, self.1, self.2)
+    }
+
     fn is_start_node(&self, part:Part) -> bool {
         match part {
             Part1 => self.0 == 'A' && self.1 == 'A' && self.2 == 'A',
@@ -234,6 +239,22 @@ impl Route<'_> {
             finish_nodes:finish_nodes
         }
     }
+
+    fn generate_all_routes(network:&Network, part:Part) -> HashMap<Node,Route> {
+        let mut nodes_to_process = network.start_nodes.clone();
+        let mut routes:HashMap<Node,Route> = HashMap::new();
+        while nodes_to_process.len() > 0 {
+            let node = nodes_to_process.pop().expect("nodes_to_process is empty");
+            let route = Self::generate_route(network, node, part);
+            println!("{} -> {} ({} finish_nodes)", node.to_string(), route.target_node.to_string(), route.finish_nodes.len());
+            if !routes.contains_key(&route.target_node) {
+                nodes_to_process.push(route.target_node);
+            }
+            routes.insert(node, route);
+        }
+        routes
+    }
+
 }
 
 
@@ -362,6 +383,13 @@ ZZZ = (ZZZ, ZZZ)
     let route2 = Route::generate_route(&network, Node::from_str("BBB"), Part1);
     assert_eq!(route2.target_node, Node::from_str("ZZZ"));
     assert_eq!(route2.finish_nodes, vec![(3, Node::from_str("ZZZ"))]);
+
+    let routes = Route::generate_all_routes(&network, Part1);
+    assert_eq!(routes.len(), 3);
+    assert_eq!(routes.get(&Node::from_str("AAA")).unwrap().target_node, Node::from_str("BBB"));
+    assert_eq!(routes.get(&Node::from_str("BBB")).unwrap().target_node, Node::from_str("ZZZ"));
+    assert_eq!(routes.get(&Node::from_str("ZZZ")).unwrap().target_node, Node::from_str("ZZZ"));
+
 }
 
 #[test]
@@ -376,6 +404,16 @@ fn test_network3() {
     assert_eq!(network.walk(Node::from_str("22A"), Right), Node::from_str("XXX"));
 
     assert_eq!(network.play(Part2), 6);
+
+    let routes = Route::generate_all_routes(&network, Part2);
+    assert_eq!(routes.len(), 6);
+    assert_eq!(routes.get(&Node::from_str("11A")).unwrap().target_node, Node::from_str("11Z"));
+    assert_eq!(routes.get(&Node::from_str("11Z")).unwrap().target_node, Node::from_str("11Z"));
+    assert_eq!(routes.get(&Node::from_str("22A")).unwrap().target_node, Node::from_str("22C"));
+    assert_eq!(routes.get(&Node::from_str("22C")).unwrap().target_node, Node::from_str("22B"));
+    assert_eq!(routes.get(&Node::from_str("22B")).unwrap().target_node, Node::from_str("22Z"));
+    assert_eq!(routes.get(&Node::from_str("22Z")).unwrap().target_node, Node::from_str("22C"));
+
 }
 
 //////////////////////////////////////////
