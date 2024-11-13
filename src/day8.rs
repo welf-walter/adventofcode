@@ -18,17 +18,19 @@ use Part::Part2;
 #[derive(Eq, Hash, PartialEq, Debug, Clone, Copy)]
 struct Node(char, char, char);
 
+use std::fmt;
+impl fmt::Display for Node {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}{}{}", self.0, self.1, self.2)
+    }
+}
+
 impl Node {
     fn from_str(s:&str) -> Self {
         //s.chars().collect().try_into()
         if s.len() != 3 { panic!("Could not convert '{}' to node", s)};
         let mut iter = s.chars();
         Node(iter.next().unwrap(), iter.next().unwrap(), iter.next().unwrap())
-    }
-
-    #[cfg(test)]
-    fn to_string(&self) -> String {
-        format!("{}{}{}", self.0, self.1, self.2)
     }
 
     fn is_start_node(&self, part:Part) -> bool {
@@ -220,7 +222,14 @@ struct Route<'a> {
     finish_nodes:Vec<(u32, Node)>
 }
 
+impl fmt::Display for Route<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} -> {} ({} finish_nodes)", self.start_node, self.target_node, self.finish_nodes.len())
+    }
+}
+
 impl Route<'_> {
+
     fn generate_route(network:&Network, start_node:Node, part:Part) -> Route {
         let mut current_node = start_node;
         let mut finish_nodes:Vec<(u32, Node)> = Vec::new();
@@ -246,7 +255,7 @@ impl Route<'_> {
         while nodes_to_process.len() > 0 {
             let node = nodes_to_process.pop().expect("nodes_to_process is empty");
             let route = Self::generate_route(network, node, part);
-            println!("{} -> {} ({} finish_nodes)", node.to_string(), route.target_node.to_string(), route.finish_nodes.len());
+            println!("{}", &route);
             if !routes.contains_key(&route.target_node) {
                 nodes_to_process.push(route.target_node);
             }
@@ -437,6 +446,11 @@ pub fn part1and2() {
         let mut parsed = Day8Parser::parse(Rule::file, &concat_input).unwrap();
         let file_rule = parsed.next().unwrap();
         let network = build_network(file_rule, part);
+
+        let routes = Route::generate_all_routes(&network, part);
+        for (_, route) in routes.iter() {
+            println!("       {}", route);
+        }
 
         let step_count = network.play(part);
         println!("Day 8, {:?}: Number of steps is {}", part, step_count);
