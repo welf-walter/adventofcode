@@ -199,6 +199,43 @@ fn build_network(file_rule:Pair<'_, Rule>, part:Part) -> Network {
 }
 
 
+//////////////////////////////////////////
+/// Route
+//////////////////////////////////////////
+
+#[derive(Debug, PartialEq)]
+// Walk once all instructions through the network
+struct Route<'a> {
+    network:&'a Network,
+    // start at this node
+    start_node:Node,
+    // end at this node
+    target_node:Node,
+    // reach a finish node after so many steps
+    finish_nodes:Vec<(u32, Node)>
+}
+
+impl Route<'_> {
+    fn generate_route(network:&Network, start_node:Node, part:Part) -> Route {
+        let mut current_node = start_node;
+        let mut finish_nodes:Vec<(u32, Node)> = Vec::new();
+        let mut step_count = 0;
+        for direction in &network.instructions {
+            step_count += 1;
+            current_node = network.walk(current_node, *direction);
+            if current_node.is_finish_node(part) {
+                finish_nodes.push((step_count, current_node));
+            }
+        }
+        Route {
+            network:network,
+            start_node:start_node,
+            target_node:current_node,
+            finish_nodes:finish_nodes
+        }
+    }
+}
+
 
 //////////////////////////////////////////
 /// Test Business Logic
@@ -283,6 +320,14 @@ ZZZ = (ZZZ, ZZZ)
     println!("left = {:?}", network_built);
     println!("right = {:?}", network);
     assert_eq!(network_built, network);
+
+    let route1 = Route::generate_route(&network, Node::from_str("AAA"), Part1);
+    assert_eq!(route1.target_node, Node::from_str("ZZZ"));
+    assert_eq!(route1.finish_nodes, vec![(2, Node::from_str("ZZZ"))]);
+
+    let route2 = Route::generate_route(&network, Node::from_str("ZZZ"), Part1);
+    assert_eq!(route2.target_node, Node::from_str("ZZZ"));
+    assert_eq!(route2.finish_nodes, vec![(1, Node::from_str("ZZZ")), (2, Node::from_str("ZZZ"))]);
 }
 
 #[test]
@@ -309,6 +354,14 @@ ZZZ = (ZZZ, ZZZ)
     println!("left = {:?}", network_built);
     println!("right = {:?}", network);
     assert_eq!(network_built, network);
+
+    let route1 = Route::generate_route(&network, Node::from_str("AAA"), Part1);
+    assert_eq!(route1.target_node, Node::from_str("BBB"));
+    assert_eq!(route1.finish_nodes, vec![]);
+
+    let route2 = Route::generate_route(&network, Node::from_str("BBB"), Part1);
+    assert_eq!(route2.target_node, Node::from_str("ZZZ"));
+    assert_eq!(route2.finish_nodes, vec![(3, Node::from_str("ZZZ"))]);
 }
 
 #[test]
