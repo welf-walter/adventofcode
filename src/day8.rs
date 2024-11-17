@@ -132,23 +132,31 @@ impl Network {
 
     // how many steps does it take to walk from AAA to ZZZ?
     fn play(&self, part:Part) -> u32 {
-        let mut steps = 0;
+        let mut step_count = 0;
         let mut nodes = self.start_nodes.clone();
-        let start_node_count = nodes.len();
+        let routes = Route::generate_all_routes(self, part);
         loop {
-            for direction in &self.instructions {
-                steps += 1;
-                let mut finish_node_count = 0;
-                for node in &mut nodes {
-                    *node = self.walk(*node, *direction);
-                    if node.is_finish_node(part) {
-                        finish_node_count += 1;
-                    }
-                }
-                if start_node_count == finish_node_count {
-                    return steps;
+
+            let current_routes: Vec<&Route> = nodes.iter().map(|node| routes.get(node).unwrap()).collect();
+
+            // can we finish in this loop?
+            let node1 = nodes[0];
+            let route1 = routes.get(&node1).unwrap();
+            let finish_steps1 = route1.finish_nodes.iter().map(|(steps,_)| steps );
+            for finish_step in finish_steps1 {
+
+                let any_fails = current_routes.iter().any(|route| route.can_finish_in_n_steps(*finish_step) == false);
+                println!("Check finish step {}: any_fails = {}", *finish_step, any_fails);
+
+                if ! any_fails {
+                    return step_count + finish_step;
                 }
             }
+
+            nodes = current_routes.iter().map(|route| route.target_node).collect();
+            println!("New node list: {:?}", nodes);
+
+            step_count += self.instructions.len() as u32;
         }
     }
 }
@@ -264,6 +272,10 @@ impl Route<'_> {
         routes
     }
 
+    fn can_finish_in_n_steps(&self, n:u32) -> bool {
+        self.finish_nodes.iter().any(|(steps,_)| *steps == n )
+    }
+
 }
 
 
@@ -354,10 +366,13 @@ ZZZ = (ZZZ, ZZZ)
     let route1 = Route::generate_route(&network, Node::from_str("AAA"), Part1);
     assert_eq!(route1.target_node, Node::from_str("ZZZ"));
     assert_eq!(route1.finish_nodes, vec![(2, Node::from_str("ZZZ"))]);
+    assert_eq!(route1.can_finish_in_n_steps(1), false);
+    assert_eq!(route1.can_finish_in_n_steps(2), true);
 
     let route2 = Route::generate_route(&network, Node::from_str("ZZZ"), Part1);
     assert_eq!(route2.target_node, Node::from_str("ZZZ"));
     assert_eq!(route2.finish_nodes, vec![(1, Node::from_str("ZZZ")), (2, Node::from_str("ZZZ"))]);
+
 }
 
 #[test]
@@ -398,6 +413,9 @@ ZZZ = (ZZZ, ZZZ)
     assert_eq!(routes.get(&Node::from_str("AAA")).unwrap().target_node, Node::from_str("BBB"));
     assert_eq!(routes.get(&Node::from_str("BBB")).unwrap().target_node, Node::from_str("ZZZ"));
     assert_eq!(routes.get(&Node::from_str("ZZZ")).unwrap().target_node, Node::from_str("ZZZ"));
+
+    assert_eq!(routes.get(&Node::from_str("BBB")).unwrap().can_finish_in_n_steps(2), false);
+    assert_eq!(routes.get(&Node::from_str("BBB")).unwrap().can_finish_in_n_steps(3), true);
 
 }
 
