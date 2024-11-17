@@ -15,12 +15,18 @@ use Part::Part2;
 /// Node
 //////////////////////////////////////////
 
-#[derive(Eq, Hash, PartialEq, Debug, Clone, Copy)]
+#[derive(Eq, Hash, PartialEq, Clone, Copy)]
 struct Node(char, char, char);
 
 use std::fmt;
 impl fmt::Display for Node {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}{}{}", self.0, self.1, self.2)
+    }
+}
+
+impl fmt::Debug for Node {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         write!(f, "{}{}{}", self.0, self.1, self.2)
     }
 }
@@ -59,6 +65,8 @@ fn test_node() {
     assert_eq!(Node::from_str("ZZZ").is_finish_node(Part2), true);
     assert_eq!(Node::from_str("11Z").is_finish_node(Part1), false);
     assert_eq!(Node::from_str("11Z").is_finish_node(Part2), true);
+    assert_eq!(format!("{}", Node::from_str("ABC")), "ABC");
+    assert_eq!(format!("{:?}", Node::from_str("ABC")), "ABC");
 }
 
 //////////////////////////////////////////
@@ -136,25 +144,39 @@ impl Network {
         let mut nodes = self.start_nodes.clone();
         let routes = Route::generate_all_routes(self, part);
         loop {
+            println!("Current step count = {}", step_count);
 
             let current_routes: Vec<&Route> = nodes.iter().map(|node| routes.get(node).unwrap()).collect();
 
-            // can we finish in this loop?
-            let node1 = nodes[0];
-            let route1 = routes.get(&node1).unwrap();
-            let finish_steps1 = route1.finish_nodes.iter().map(|(steps,_)| steps );
-            for finish_step in finish_steps1 {
+            let has_any_finish = current_routes.iter().any(|route| route.finish_nodes.len() > 0);
+            let have_all_finish = !current_routes.iter().any(|route| route.finish_nodes.len() == 0);
 
-                let any_fails = current_routes.iter().any(|route| route.can_finish_in_n_steps(*finish_step) == false);
-                println!("Check finish step {}: any_fails = {}", *finish_step, any_fails);
+            if has_any_finish {
+                // print all finish lists
+                for route in &current_routes {
+                    print!("  Finish nodes: {:?}", route.finish_nodes);
+                }
+                println!("");
+            }
 
-                if ! any_fails {
-                    return step_count + finish_step;
+            if have_all_finish {
+                // can we finish in this loop?
+                let node1 = nodes[0];
+                let route1 = routes.get(&node1).unwrap();
+                let finish_steps1 = route1.finish_nodes.iter().map(|(steps,_)| steps );
+                for finish_step in finish_steps1 {
+
+                    let any_fails = current_routes.iter().any(|route| route.can_finish_in_n_steps(*finish_step) == false);
+                    println!("Check finish step {}: any_fails = {}", *finish_step, any_fails);
+
+                    if ! any_fails {
+                        return step_count + finish_step;
+                    }
                 }
             }
 
             nodes = current_routes.iter().map(|route| route.target_node).collect();
-            println!("New node list: {:?}", nodes);
+            //println!("New node list: {:?}", nodes);
 
             step_count += self.instructions.len() as u32;
         }
