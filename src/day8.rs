@@ -11,6 +11,8 @@ enum Part {
 use Part::Part1;
 use Part::Part2;
 
+type Steps = u64;
+
 //////////////////////////////////////////
 /// Node
 //////////////////////////////////////////
@@ -138,12 +140,12 @@ impl Network {
         }
     }
 
-    fn instructions_len(&self) -> u32 {
-        self.instructions.len() as u32
+    fn instructions_len(&self) -> Steps {
+        self.instructions.len() as Steps
     }
 
     // follow the routes from one nodes until the end
-    fn follow_routes(&self, routes:&HashMap<Node,Route>, from:Node, part:Part) -> (/*steps: */u32, /*target: */Node) {
+    fn follow_routes(&self, routes:&HashMap<Node,Route>, from:Node, part:Part) -> (/*steps: */Steps, /*target: */Node) {
         let mut current_node = from;
         let mut step_count = 0;
         loop {
@@ -167,10 +169,10 @@ impl Network {
         for start_node in &self.start_nodes {
 
             let (steps1, target1) = self.follow_routes(&routes, *start_node, part);
-            println!("  From {} to {} in {} steps.", start_node, target1, steps1);
+            //println!("  From {} to {} in {} steps.", start_node, target1, steps1);
 
             let (steps2, target2) = self.follow_routes(&routes, target1, part);
-            println!("    From {} to {} in {} steps.", target1, target2, steps2);
+            //println!("    From {} to {} in {} steps.", target1, target2, steps2);
 
             assert_eq!(steps1, steps2);
             assert_eq!(target1, target2);
@@ -179,15 +181,15 @@ impl Network {
     }
 
     // how many steps does it take to walk from AAA to ZZZ?
-    fn play(&self, part:Part) -> u32 {
+    fn play(&self, part:Part) -> Steps {
 
         let routes = Route::generate_all_routes(self, part);
         let mut steps_per_startnode = Vec::new();
 
         for start_node in &self.start_nodes {
 
-            let (steps, target) = self.follow_routes(&routes, *start_node, part);
-            println!("  From {} to {} in {} steps.", start_node, target, steps);
+            let (steps, _target) = self.follow_routes(&routes, *start_node, part);
+            //println!("  From {} to {} in {} steps.", start_node, target, steps);
             steps_per_startnode.push(steps);
 
         }
@@ -310,7 +312,7 @@ impl Route<'_> {
         while nodes_to_process.len() > 0 {
             let node = nodes_to_process.pop().expect("nodes_to_process is empty");
             let route = Self::generate_route(network, node, part);
-            println!("{}", &route);
+            //println!("{}", &route);
             if !routes.contains_key(&route.target_node) {
                 nodes_to_process.push(route.target_node);
             }
@@ -510,10 +512,10 @@ pub fn part1and2() {
         let network = build_network(file_rule, part);
         network.check_network_is_nice(part);
 
-        let routes = Route::generate_all_routes(&network, part);
-        for (_, route) in routes.iter() {
-            println!("       {}", route);
-        }
+        //let routes = Route::generate_all_routes(&network, part);
+        //for (_, route) in routes.iter() {
+        //    println!("       {}", route);
+        //}
 
         let step_count = network.play(part);
         println!("Day 8, {:?}: Number of steps is {}", part, step_count);
