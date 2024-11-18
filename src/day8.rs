@@ -138,48 +138,67 @@ impl Network {
         }
     }
 
+    fn instructions_len(&self) -> u32 {
+        self.instructions.len() as u32
+    }
+
+    // follow the routes from one nodes until the end
+    fn follow_routes(&self, routes:&HashMap<Node,Route>, from:Node, part:Part) -> (/*steps: */u32, /*target: */Node) {
+        let mut current_node = from;
+        let mut step_count = 0;
+        loop {
+            let route = routes.get(&current_node).unwrap();
+            current_node = route.target_node;
+            step_count += self.instructions_len();
+
+            if current_node.is_finish_node(part) {
+                return (step_count, current_node );
+            }
+        }
+    }
+
+    // while not strictly in the rules of the game, it seems that the actual network of the
+    // puzzle is quite nice:
+    // From a start node to the target node the FULL instruction set is executed several times (so e.g. no target after 2 full runs and 3 single instructions)
+    // If the start node reaches target node ZZZ after n steps, the target node ZZZ is reached AGAIN after n steps
+    fn check_network_is_nice(&self, part:Part) {
+        let routes = Route::generate_all_routes(self, part);
+
+        for start_node in &self.start_nodes {
+
+            let (steps1, target1) = self.follow_routes(&routes, *start_node, part);
+            println!("  From {} to {} in {} steps.", start_node, target1, steps1);
+
+            let (steps2, target2) = self.follow_routes(&routes, target1, part);
+            println!("    From {} to {} in {} steps.", target1, target2, steps2);
+
+            assert_eq!(steps1, steps2);
+            assert_eq!(target1, target2);
+
+        }
+    }
+
     // how many steps does it take to walk from AAA to ZZZ?
     fn play(&self, part:Part) -> u32 {
-        let mut step_count = 0;
-        let mut nodes = self.start_nodes.clone();
+
         let routes = Route::generate_all_routes(self, part);
-        loop {
-            println!("Current step count = {}", step_count);
+        let mut steps_per_startnode = Vec::new();
 
-            let current_routes: Vec<&Route> = nodes.iter().map(|node| routes.get(node).unwrap()).collect();
+        for start_node in &self.start_nodes {
 
-            let has_any_finish = current_routes.iter().any(|route| route.finish_nodes.len() > 0);
-            let have_all_finish = !current_routes.iter().any(|route| route.finish_nodes.len() == 0);
+            let (steps, target) = self.follow_routes(&routes, *start_node, part);
+            println!("  From {} to {} in {} steps.", start_node, target, steps);
+            steps_per_startnode.push(steps);
 
-            if has_any_finish {
-                // print all finish lists
-                for route in &current_routes {
-                    print!("  Finish nodes: {:?}", route.finish_nodes);
-                }
-                println!("");
-            }
-
-            if have_all_finish {
-                // can we finish in this loop?
-                let node1 = nodes[0];
-                let route1 = routes.get(&node1).unwrap();
-                let finish_steps1 = route1.finish_nodes.iter().map(|(steps,_)| steps );
-                for finish_step in finish_steps1 {
-
-                    let any_fails = current_routes.iter().any(|route| route.can_finish_in_n_steps(*finish_step) == false);
-                    println!("Check finish step {}: any_fails = {}", *finish_step, any_fails);
-
-                    if ! any_fails {
-                        return step_count + finish_step;
-                    }
-                }
-            }
-
-            nodes = current_routes.iter().map(|route| route.target_node).collect();
-            //println!("New node list: {:?}", nodes);
-
-            step_count += self.instructions.len() as u32;
         }
+
+        let mut lowest_common_multiple = 1;
+        for steps in steps_per_startnode {
+            lowest_common_multiple =  num::integer::lcm(steps, lowest_common_multiple);
+        }
+
+        lowest_common_multiple
+
     }
 }
 
@@ -249,12 +268,12 @@ struct Route<'a> {
     // end at this node
     target_node:Node,
     // reach a finish node after so many steps
-    finish_nodes:Vec<(u32, Node)>
+    target_is_finish:bool
 }
 
 impl fmt::Display for Route<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} -> {} ({} finish_nodes)", self.start_node, self.target_node, self.finish_nodes.len())
+        write!(f, "{} -> {} (is_finish = {})", self.start_node, self.target_node, self.target_is_finish)
     }
 }
 
@@ -262,20 +281,26 @@ impl Route<'_> {
 
     fn generate_route(network:&Network, start_node:Node, part:Part) -> Route {
         let mut current_node = start_node;
-        let mut finish_nodes:Vec<(u32, Node)> = Vec::new();
-        let mut step_count = 0;
+        //let mut step_count = 0;
         for direction in &network.instructions {
-            step_count += 1;
+            //step_count += 1;
             current_node = network.walk(current_node, *direction);
-            if current_node.is_finish_node(part) {
-                finish_nodes.push((step_count, current_node));
-            }
+
+            // in fact, the puzzle is simpler than expected:
+            // the finish is only reachable at the end of one instruction set
+            // make sure this is true
+            //if current_node.is_finish_node(part) {
+            //    if step_count != network.instructions_len() {
+            //        panic!("I thought only at the end of an instruction set a finish node is reached: node = {}, step = {}", current_node, step_count);
+            //    }
+            //}
+            // in fact the assumption above fails for the test cases!
         }
         Route {
             network:network,
             start_node:start_node,
             target_node:current_node,
-            finish_nodes:finish_nodes
+            target_is_finish:current_node.is_finish_node(part)
         }
     }
 
@@ -292,10 +317,6 @@ impl Route<'_> {
             routes.insert(node, route);
         }
         routes
-    }
-
-    fn can_finish_in_n_steps(&self, n:u32) -> bool {
-        self.finish_nodes.iter().any(|(steps,_)| *steps == n )
     }
 
 }
@@ -359,6 +380,7 @@ XXX = (XXX, XXX)
 #[test]
 fn test_network1() {
     let network = example_network1();
+    network.check_network_is_nice(Part1);
 
     assert_eq!(network.start_nodes, vec![Node::from_str("AAA")]);
 
@@ -387,19 +409,21 @@ ZZZ = (ZZZ, ZZZ)
 
     let route1 = Route::generate_route(&network, Node::from_str("AAA"), Part1);
     assert_eq!(route1.target_node, Node::from_str("ZZZ"));
-    assert_eq!(route1.finish_nodes, vec![(2, Node::from_str("ZZZ"))]);
-    assert_eq!(route1.can_finish_in_n_steps(1), false);
-    assert_eq!(route1.can_finish_in_n_steps(2), true);
+    assert_eq!(route1.target_is_finish, true);
 
     let route2 = Route::generate_route(&network, Node::from_str("ZZZ"), Part1);
     assert_eq!(route2.target_node, Node::from_str("ZZZ"));
-    assert_eq!(route2.finish_nodes, vec![(1, Node::from_str("ZZZ")), (2, Node::from_str("ZZZ"))]);
+    assert_eq!(route2.target_is_finish, true);
 
 }
 
 #[test]
 fn test_network2() {
     let network = example_network2();
+
+    // actually, the example network 2 does not adhere to the assumed
+    // simplifications necessary to calculate the result in that way :(
+    //network.check_network_is_nice(Part1);
 
     assert_eq!(network.start_nodes, vec![Node::from_str("AAA")]);
 
@@ -424,11 +448,11 @@ ZZZ = (ZZZ, ZZZ)
 
     let route1 = Route::generate_route(&network, Node::from_str("AAA"), Part1);
     assert_eq!(route1.target_node, Node::from_str("BBB"));
-    assert_eq!(route1.finish_nodes, vec![]);
+    assert_eq!(route1.target_is_finish, false);
 
     let route2 = Route::generate_route(&network, Node::from_str("BBB"), Part1);
     assert_eq!(route2.target_node, Node::from_str("ZZZ"));
-    assert_eq!(route2.finish_nodes, vec![(3, Node::from_str("ZZZ"))]);
+    assert_eq!(route2.target_is_finish, true);
 
     let routes = Route::generate_all_routes(&network, Part1);
     assert_eq!(routes.len(), 3);
@@ -436,14 +460,12 @@ ZZZ = (ZZZ, ZZZ)
     assert_eq!(routes.get(&Node::from_str("BBB")).unwrap().target_node, Node::from_str("ZZZ"));
     assert_eq!(routes.get(&Node::from_str("ZZZ")).unwrap().target_node, Node::from_str("ZZZ"));
 
-    assert_eq!(routes.get(&Node::from_str("BBB")).unwrap().can_finish_in_n_steps(2), false);
-    assert_eq!(routes.get(&Node::from_str("BBB")).unwrap().can_finish_in_n_steps(3), true);
-
 }
 
 #[test]
 fn test_network3() {
     let network = example_network3();
+    network.check_network_is_nice(Part2);
 
     assert_eq!(network.start_nodes, vec![Node::from_str("11A"), Node::from_str("22A")]);
 
@@ -486,6 +508,7 @@ pub fn part1and2() {
         let mut parsed = Day8Parser::parse(Rule::file, &concat_input).unwrap();
         let file_rule = parsed.next().unwrap();
         let network = build_network(file_rule, part);
+        network.check_network_is_nice(part);
 
         let routes = Route::generate_all_routes(&network, part);
         for (_, route) in routes.iter() {
