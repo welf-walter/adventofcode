@@ -68,3 +68,22 @@ fn test_history() {
     assert_eq!(history3.predict(), 68);
 
 }
+
+//////////////////////////////////////////
+/// Productive usage
+//////////////////////////////////////////
+
+use std::fs::File;
+use std::io::BufRead;
+use std::io::BufReader;
+
+pub fn part1() {
+
+    let file = File::open("data/day9.input").expect("Could not open data/day9.input");
+    let reader = BufReader::new(file);
+
+    let lines:Vec<String> = reader.lines().map( |line| line.unwrap() ).collect();
+    let sum_of_predictions:Value = lines.iter().map(|line| History::from_str(line).predict()).sum();
+    println!("Day 9: Sum of predictions is {}", sum_of_predictions);
+
+}
