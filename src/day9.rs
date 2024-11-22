@@ -14,11 +14,22 @@ impl History {
         self.history[self.history.len()-1]
     }
 
-    fn predict(&self) -> Value {
+    fn first_known_value(&self) -> Value {
+        self.history[0]
+    }
+
+    fn predict_next(&self) -> Value {
         if self.all_zeroes() { return 0; }
 
         let diff = self.differentiate();
-        return self.last_known_value() + diff.predict();
+        return self.last_known_value() + diff.predict_next();
+    }
+
+    fn predict_prev(&self) -> Value {
+        if self.all_zeroes() { return 0; }
+
+        let diff = self.differentiate();
+        return self.first_known_value() - diff.predict_prev();
     }
 
     fn all_zeroes(&self) -> bool {
@@ -51,21 +62,26 @@ fn test_history() {
 
     assert_eq!(history1.last_known_value(), 15);
 
-    assert_eq!(history1dd.predict(), 0);
-    assert_eq!(history1d.predict(), 3);
-    assert_eq!(history1.predict(), 18);
+    assert_eq!(history1dd.predict_next(), 0);
+    assert_eq!(history1d.predict_next(), 3);
+    assert_eq!(history1.predict_next(), 18);
+    assert_eq!(history1dd.predict_prev(), 0);
+    assert_eq!(history1d.predict_prev(), 3);
+    assert_eq!(history1.predict_prev(), -3);
 
     let history2 = History::from_str("1 3 6 10 15 21");
     let history2d = History::differentiate(&history2);
     assert_eq!(history2d, History::from_str("2 3 4 5 6"));
-    assert_eq!(history2d.predict(), 7);
-    assert_eq!(history2.predict(), 28);
+    assert_eq!(history2d.predict_next(), 7);
+    assert_eq!(history2.predict_next(), 28);
 
     let history3 = History::from_str("10 13 16 21 30 45");
     let history3d = History::differentiate(&history3);
     assert_eq!(history3d, History::from_str("3 3 5 9 15"));
-    assert_eq!(history3d.predict(), 23);
-    assert_eq!(history3.predict(), 68);
+    assert_eq!(history3d.predict_next(), 23);
+    assert_eq!(history3.predict_next(), 68);
+    assert_eq!(history3d.predict_prev(), 5);
+    assert_eq!(history3.predict_prev(), 5);
 
 }
 
@@ -77,13 +93,15 @@ use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
 
-pub fn part1() {
+pub fn part1and2() {
 
     let file = File::open("data/day9.input").expect("Could not open data/day9.input");
     let reader = BufReader::new(file);
 
     let lines:Vec<String> = reader.lines().map( |line| line.unwrap() ).collect();
-    let sum_of_predictions:Value = lines.iter().map(|line| History::from_str(line).predict()).sum();
-    println!("Day 9: Sum of predictions is {}", sum_of_predictions);
+    let sum_of_next_predictions:Value = lines.iter().map(|line| History::from_str(line).predict_next()).sum();
+    println!("Day 9, Part 1: Sum of next predictions is {}", sum_of_next_predictions);
+    let sum_of_prev_predictions:Value = lines.iter().map(|line| History::from_str(line).predict_prev()).sum();
+    println!("Day 9, Part 2: Sum of prev predictions is {}", sum_of_prev_predictions);
 
 }
