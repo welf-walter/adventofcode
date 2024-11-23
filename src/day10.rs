@@ -265,6 +265,10 @@ impl Loop {
             next_direction = grid.walk(current, next_direction);
         }
     }
+
+    fn get_distance_of_farthest_point(&self) -> usize {
+        self.positions.len() / 2
+    }
 }
 
 #[test]
@@ -286,5 +290,39 @@ fn test_loop() {
         Position{x:2, y:3},
         Position{x:1, y:3},
         Position{x:1, y:2}
-    ])
+    ]);
+    assert_eq!(loop1.get_distance_of_farthest_point(), 4);
+
+    let input2 =
+"-L|F7
+7S-7|
+L|7||
+-L-J|
+L|-JF";
+    let grid2 = Grid::from_strings(input2.split("\n").collect());
+    let loop2 = Loop::find_loop(&grid2);
+    assert_eq!(loop1.positions, loop2.positions);
+    assert_eq!(loop2.get_distance_of_farthest_point(), 4);
+
+    let input3 =
+"..F7.
+.FJ|.
+SJ.L7
+|F--J
+LJ...";
+    let grid3 = Grid::from_strings(input3.split("\n").collect());
+    let loop3 = Loop::find_loop(&grid3);
+    assert_eq!(loop3.get_distance_of_farthest_point(), 8);
+
+    let input4 =
+"7-F7-
+.FJ|7
+SJLL7
+|F--J
+LJ.LJ";
+    let grid4 = Grid::from_strings(input4.split("\n").collect());
+    let loop4 = Loop::find_loop(&grid4);
+    assert_eq!(loop3.positions, loop4.positions);
+    assert_eq!(loop4.get_distance_of_farthest_point(), 8);
+
 }
