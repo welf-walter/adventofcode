@@ -167,25 +167,25 @@ impl Grid {
         let tile = self.get_tile(position);
         match last_direction {
             Direction::SOUTH /* coming from NORTH */ => {
-                assert!(tile.connects_north());
+                assert!(tile == START_TILE || tile.connects_north());
                 if tile.connects_east()  {return Direction::EAST;}
                 if tile.connects_south() {return Direction::SOUTH;}
                 if tile.connects_west()  {return Direction::WEST;}
             },
             Direction::WEST /* coming from EAST */ => {
-                assert!(tile.connects_east());
+                assert!(tile == START_TILE || tile.connects_east());
                 if tile.connects_north() {return Direction::NORTH;}
                 if tile.connects_south() {return Direction::SOUTH;}
                 if tile.connects_west()  {return Direction::WEST;}
             },
             Direction::NORTH /* coming from SOUTH */ => {
-                assert!(tile.connects_south());
+                assert!(tile == START_TILE || tile.connects_south());
                 if tile.connects_north() {return Direction::NORTH;}
                 if tile.connects_east()  {return Direction::EAST;}
                 if tile.connects_west()  {return Direction::WEST;}
             },
             Direction::EAST /* coming from WEST */ => {
-                assert!(tile.connects_west());
+                assert!(tile == START_TILE || tile.connects_west());
                 if tile.connects_north() {return Direction::NORTH;}
                 if tile.connects_east()  {return Direction::EAST;}
                 if tile.connects_south() {return Direction::SOUTH;}
@@ -229,4 +229,62 @@ fn test_grid() {
     assert_eq!(grid1.walk(Position{x:1, y:3}, Direction::WEST),  Direction::NORTH);
     assert_eq!(grid1.walk(Position{x:1, y:2}, Direction::NORTH), Direction::NORTH);
 
+}
+
+//////////////////////////////////////////
+/// Loop
+//////////////////////////////////////////
+
+#[derive(Debug, PartialEq)]
+struct Loop {
+    positions:Vec<Position>
+}
+
+impl Loop {
+    fn find_first_direction(grid:&Grid) -> Direction {
+        assert_eq!(grid.get_tile(grid.start), START_TILE);
+        if grid.get_tile(grid.start.go(Direction::NORTH)).connects_south() { return Direction::NORTH; };
+        if grid.get_tile(grid.start.go(Direction::EAST)).connects_west()   { return Direction::EAST; };
+        if grid.get_tile(grid.start.go(Direction::SOUTH)).connects_north() { return Direction::SOUTH; };
+        panic!("Start tile {:?} does not connect to any of NORTH, EAST, SOUTH", grid.start);
+    }
+
+    fn find_loop(grid:&Grid) -> Loop {
+        let mut positions:Vec<Position> = Vec::new();
+
+        let mut current = grid.start;
+        let mut next_direction = Loop::find_first_direction(grid);
+
+        loop {
+            println!("({}, {}): Go {:?}", current.x, current.y, next_direction);
+            positions.push(current);
+            current = current.go(next_direction);
+            if grid.get_tile(current) == START_TILE {
+                return Loop {positions:positions};
+            }
+            next_direction = grid.walk(current, next_direction);
+        }
+    }
+}
+
+#[test]
+fn test_loop() {
+    let input1 =
+".....
+.S-7.
+.|.|.
+.L-J.
+.....";
+    let grid1 = Grid::from_strings(input1.split("\n").collect());
+    let loop1 = Loop::find_loop(&grid1);
+    assert_eq!(loop1.positions,vec![
+        Position{x:1, y:1},
+        Position{x:2, y:1},
+        Position{x:3, y:1},
+        Position{x:3, y:2},
+        Position{x:3, y:3},
+        Position{x:2, y:3},
+        Position{x:1, y:3},
+        Position{x:1, y:2}
+    ])
 }
