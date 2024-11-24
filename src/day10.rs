@@ -1,3 +1,4 @@
+use std::fmt;
 
 //////////////////////////////////////////
 /// Tile
@@ -326,6 +327,81 @@ LJ.LJ";
     assert_eq!(loop4.get_distance_of_farthest_point(), 8);
 
 }
+
+//////////////////////////////////////////
+/// Enclosing
+//////////////////////////////////////////
+
+#[derive(Clone)]
+enum State {
+    Unknown,
+    Loop,
+    Inside,
+    Outside
+}
+
+impl State {
+    fn to_char(&self) -> char {
+      match self {
+        State::Unknown => '.',
+        State::Loop => '*',
+        State::Inside => 'I',
+        State::Outside => 'O'
+      }
+    }
+}
+
+struct Enclosing {
+    states:Vec<Vec<State>>
+}
+
+impl Enclosing {
+    fn new(like_grid:&Grid) -> Enclosing {
+        Enclosing { states: vec![vec![State::Unknown;like_grid.width]; like_grid.height] }
+    }
+}
+
+impl fmt::Display for Enclosing {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for line in &self.states {
+            for state in line {
+                write!(f, "{}", state.to_char())?
+            }
+            writeln!(f, "")?
+        }
+        return Ok(());
+    }
+}
+
+#[test]
+fn test_enclosing() {
+    let input1 = 
+"...........
+.S-------7.
+.|F-----7|.
+.||.....||.
+.||.....||.
+.|L-7.F-J|.
+.|..|.|..|.
+.L--J.L--J.
+...........";
+    let grid1 = Grid::from_strings(input1.split("\n").collect());
+    let enclosing1a = Enclosing::new(&grid1);
+    assert_eq!(enclosing1a.to_string(),
+"...........
+...........
+...........
+...........
+...........
+...........
+...........
+...........
+...........
+");
+
+//    let loop4 = Loop::find_loop(&grid4);
+}
+
 
 //////////////////////////////////////////
 /// Productive usage
