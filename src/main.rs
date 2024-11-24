@@ -9,11 +9,10 @@ mod day8;
 mod day9;
 mod day10;
 
-const NUMBER_OF_DAYS : u32 = 9;
+const NUMBER_OF_DAYS : u32 = 10;
 
 use clap::Parser;
 
-/// Search for a pattern in a file and display the lines that contain it.
 #[derive(Parser)]
 struct Cli {
     /// The days to handle
@@ -36,6 +35,7 @@ fn main() {
             7=>day7::part1and2(),
             8=>day8::part1and2(),
             9=>day9::part1and2(),
+            10=>day10::part1(),
             otherday=>println!("Unknown day {}", otherday)
         }
     }

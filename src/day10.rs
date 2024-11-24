@@ -256,7 +256,7 @@ impl Loop {
         let mut next_direction = Loop::find_first_direction(grid);
 
         loop {
-            println!("({}, {}): Go {:?}", current.x, current.y, next_direction);
+            //println!("({}, {}): Go {:?}", current.x, current.y, next_direction);
             positions.push(current);
             current = current.go(next_direction);
             if grid.get_tile(current) == START_TILE {
@@ -324,5 +324,28 @@ LJ.LJ";
     let loop4 = Loop::find_loop(&grid4);
     assert_eq!(loop3.positions, loop4.positions);
     assert_eq!(loop4.get_distance_of_farthest_point(), 8);
+
+}
+
+//////////////////////////////////////////
+/// Productive usage
+//////////////////////////////////////////
+
+use std::fs::File;
+use std::io::BufRead;
+use std::io::BufReader;
+
+pub fn part1() {
+
+    let file = File::open("data/day10.input").expect("Could not open data/day10.input");
+    let reader = BufReader::new(file);
+
+    let lines:Vec<String> = reader.lines().map( |line| line.unwrap() ).collect();
+    let lines_ref:Vec<&str> = lines.iter().map( |line| line.as_str() ).collect();
+    let grid = Grid::from_strings(lines_ref);
+    assert_eq!(grid.width, 140);
+    assert_eq!(grid.height, 140);
+    let the_loop = Loop::find_loop(&grid);
+    println!("Day 10, Part 1: Distance of farthest point {}", the_loop.get_distance_of_farthest_point());
 
 }
