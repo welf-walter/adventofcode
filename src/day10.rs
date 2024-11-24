@@ -329,10 +329,10 @@ LJ.LJ";
 }
 
 //////////////////////////////////////////
-/// Enclosing
+/// State
 //////////////////////////////////////////
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 enum State {
     Unknown,
     LoopVertical,
@@ -368,6 +368,16 @@ impl State {
     }
 }
 
+impl fmt::Display for State {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.to_char())
+    }
+}
+
+//////////////////////////////////////////
+/// Enclosing
+//////////////////////////////////////////
+
 struct Enclosing {
     states:Vec<Vec<State>>
 }
@@ -381,6 +391,22 @@ impl Enclosing {
         for pos in &the_loop.positions {
             let tile = grid.tiles[pos.y][pos.x];
             self.states[pos.y][pos.x] = State::from_tile(tile);
+        }
+    }
+
+    fn mark_inside(&mut self) {
+        let mut is_inside = false;
+        for line in self.states.iter_mut() {
+            for state in line.iter_mut() {
+                match *state {
+                    State::Unknown => { *state = if is_inside { State::Inside } else { State::Outside }; },
+                    State::LoopVertical => { is_inside = !is_inside },
+                    State::LoopHorizontal => {},
+                    State::LoopEdge => {},
+                    _ => panic!("Unexpected state {}", *state)
+                }
+            }
+            assert!(!is_inside);
         }
     }
 }
@@ -435,6 +461,19 @@ fn test_enclosing() {
 .|..|.|..|.
 .+--+.+--+.
 ...........
+");
+
+    enclosing1.mark_inside();
+    assert_eq!(enclosing1.to_string(),
+"OOOOOOOOOOO
+O+-------+O
+O|+-----+|O
+O||OOOOO||O
+O||OOOOO||O
+O|+-+O+-+|O
+O|II|O|II|O
+O+--+O+--+O
+OOOOOOOOOOO
 ");
 }
 
