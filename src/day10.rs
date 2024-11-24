@@ -335,7 +335,9 @@ LJ.LJ";
 #[derive(Clone)]
 enum State {
     Unknown,
-    Loop,
+    LoopVertical,
+    LoopHorizontal,
+    LoopEdge,
     Inside,
     Outside
 }
@@ -344,10 +346,25 @@ impl State {
     fn to_char(&self) -> char {
       match self {
         State::Unknown => '.',
-        State::Loop => '*',
+        State::LoopVertical => '|',
+        State::LoopHorizontal => '-',
+        State::LoopEdge => '+',
         State::Inside => 'I',
         State::Outside => 'O'
       }
+    }
+
+    fn from_tile(tile:Tile) -> State {
+        match tile.c {
+            '|' => State::LoopVertical,
+            '-' => State::LoopHorizontal,
+            'F' => State::LoopEdge,
+            '7' => State::LoopEdge,
+            'J' => State::LoopEdge,
+            'L' => State::LoopEdge,
+            'S' => State::LoopEdge, // tbc. is this true?
+            _ => panic!("unexpected from_tile({})", tile.c)
+        }
     }
 }
 
@@ -358,6 +375,13 @@ struct Enclosing {
 impl Enclosing {
     fn new(like_grid:&Grid) -> Enclosing {
         Enclosing { states: vec![vec![State::Unknown;like_grid.width]; like_grid.height] }
+    }
+
+    fn mark_loop(&mut self, the_loop:&Loop, grid:&Grid) {
+        for pos in &the_loop.positions {
+            let tile = grid.tiles[pos.y][pos.x];
+            self.states[pos.y][pos.x] = State::from_tile(tile);
+        }
     }
 }
 
@@ -386,8 +410,8 @@ fn test_enclosing() {
 .L--J.L--J.
 ...........";
     let grid1 = Grid::from_strings(input1.split("\n").collect());
-    let enclosing1a = Enclosing::new(&grid1);
-    assert_eq!(enclosing1a.to_string(),
+    let mut enclosing1 = Enclosing::new(&grid1);
+    assert_eq!(enclosing1.to_string(),
 "...........
 ...........
 ...........
@@ -399,7 +423,19 @@ fn test_enclosing() {
 ...........
 ");
 
-//    let loop4 = Loop::find_loop(&grid4);
+    let loop1 = Loop::find_loop(&grid1);
+    enclosing1.mark_loop(&loop1, &grid1);
+    assert_eq!(enclosing1.to_string(),
+"...........
+.+-------+.
+.|+-----+|.
+.||.....||.
+.||.....||.
+.|+-+.+-+|.
+.|..|.|..|.
+.+--+.+--+.
+...........
+");
 }
 
 
