@@ -11,7 +11,7 @@ $ cargo test
 
 # How to run
 
+Get solution for puzzle #5:
 ```
-$ cargo build
-$ cargo test
+$ cargo run 5
 ```
