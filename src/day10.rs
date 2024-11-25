@@ -109,10 +109,10 @@ const INVALID_POSITION:Position = Position { x:99999, y:99998};
 impl Position {
     fn go(&self, direction:Direction) -> Position {
         match direction {
-            Direction::NORTH => Position{x:self.x  ,y:self.y-1},
-            Direction::EAST  => Position{x:self.x+1,y:self.y  },
-            Direction::SOUTH => Position{x:self.x  ,y:self.y+1},
-            Direction::WEST  => Position{x:self.x-1,y:self.y  }
+            NORTH => Position{x:self.x  ,y:self.y-1},
+            EAST  => Position{x:self.x+1,y:self.y  },
+            SOUTH => Position{x:self.x  ,y:self.y+1},
+            WEST  => Position{x:self.x-1,y:self.y  }
         }
     }
 }
@@ -128,6 +128,8 @@ enum Direction {
     SOUTH,
     WEST
 }
+
+use Direction::*;
 
 //////////////////////////////////////////
 /// Grid
@@ -167,29 +169,29 @@ impl Grid {
     fn walk(&self, position:Position, last_direction:Direction) -> Direction {
         let tile = self.get_tile(position);
         match last_direction {
-            Direction::SOUTH /* coming from NORTH */ => {
+            SOUTH /* coming from NORTH */ => {
                 assert!(tile == START_TILE || tile.connects_north());
-                if tile.connects_east()  {return Direction::EAST;}
-                if tile.connects_south() {return Direction::SOUTH;}
-                if tile.connects_west()  {return Direction::WEST;}
+                if tile.connects_east()  {return EAST;}
+                if tile.connects_south() {return SOUTH;}
+                if tile.connects_west()  {return WEST;}
             },
-            Direction::WEST /* coming from EAST */ => {
+            WEST /* coming from EAST */ => {
                 assert!(tile == START_TILE || tile.connects_east());
-                if tile.connects_north() {return Direction::NORTH;}
-                if tile.connects_south() {return Direction::SOUTH;}
-                if tile.connects_west()  {return Direction::WEST;}
+                if tile.connects_north() {return NORTH;}
+                if tile.connects_south() {return SOUTH;}
+                if tile.connects_west()  {return WEST;}
             },
-            Direction::NORTH /* coming from SOUTH */ => {
+            NORTH /* coming from SOUTH */ => {
                 assert!(tile == START_TILE || tile.connects_south());
-                if tile.connects_north() {return Direction::NORTH;}
-                if tile.connects_east()  {return Direction::EAST;}
-                if tile.connects_west()  {return Direction::WEST;}
+                if tile.connects_north() {return NORTH;}
+                if tile.connects_east()  {return EAST;}
+                if tile.connects_west()  {return WEST;}
             },
-            Direction::EAST /* coming from WEST */ => {
+            EAST /* coming from WEST */ => {
                 assert!(tile == START_TILE || tile.connects_west());
-                if tile.connects_north() {return Direction::NORTH;}
-                if tile.connects_east()  {return Direction::EAST;}
-                if tile.connects_south() {return Direction::SOUTH;}
+                if tile.connects_north() {return NORTH;}
+                if tile.connects_east()  {return EAST;}
+                if tile.connects_south() {return SOUTH;}
             }
         }
         panic!("Cannot walk from ({}, {}) if I came from {:?}", position.x, position.y, last_direction);
@@ -217,18 +219,18 @@ fn test_grid() {
             vec![Tile::from_char('.'),Tile::from_char('.'),Tile::from_char('.'),Tile::from_char('.'),Tile::from_char('.')]
         ]);
 
-    assert_eq!(Position{x:2, y:2}.go(Direction::NORTH), Position{x:2, y:1});
-    assert_eq!(Position{x:2, y:2}.go(Direction::EAST),  Position{x:3, y:2});
-    assert_eq!(Position{x:2, y:2}.go(Direction::SOUTH), Position{x:2, y:3});
-    assert_eq!(Position{x:2, y:2}.go(Direction::WEST),  Position{x:1, y:2});
+    assert_eq!(Position{x:2, y:2}.go(NORTH), Position{x:2, y:1});
+    assert_eq!(Position{x:2, y:2}.go(EAST),  Position{x:3, y:2});
+    assert_eq!(Position{x:2, y:2}.go(SOUTH), Position{x:2, y:3});
+    assert_eq!(Position{x:2, y:2}.go(WEST),  Position{x:1, y:2});
 
-    assert_eq!(grid1.walk(Position{x:2, y:1}, Direction::EAST),  Direction::EAST);
-    assert_eq!(grid1.walk(Position{x:3, y:1}, Direction::EAST),  Direction::SOUTH);
-    assert_eq!(grid1.walk(Position{x:3, y:2}, Direction::SOUTH), Direction::SOUTH);
-    assert_eq!(grid1.walk(Position{x:3, y:3}, Direction::SOUTH), Direction::WEST);
-    assert_eq!(grid1.walk(Position{x:2, y:3}, Direction::WEST),  Direction::WEST);
-    assert_eq!(grid1.walk(Position{x:1, y:3}, Direction::WEST),  Direction::NORTH);
-    assert_eq!(grid1.walk(Position{x:1, y:2}, Direction::NORTH), Direction::NORTH);
+    assert_eq!(grid1.walk(Position{x:2, y:1}, EAST),  EAST);
+    assert_eq!(grid1.walk(Position{x:3, y:1}, EAST),  SOUTH);
+    assert_eq!(grid1.walk(Position{x:3, y:2}, SOUTH), SOUTH);
+    assert_eq!(grid1.walk(Position{x:3, y:3}, SOUTH), WEST);
+    assert_eq!(grid1.walk(Position{x:2, y:3}, WEST),  WEST);
+    assert_eq!(grid1.walk(Position{x:1, y:3}, WEST),  NORTH);
+    assert_eq!(grid1.walk(Position{x:1, y:2}, NORTH), NORTH);
 
 }
 
@@ -244,9 +246,9 @@ struct Loop {
 impl Loop {
     fn find_first_direction(grid:&Grid) -> Direction {
         assert_eq!(grid.get_tile(grid.start), START_TILE);
-        if grid.get_tile(grid.start.go(Direction::NORTH)).connects_south() { return Direction::NORTH; };
-        if grid.get_tile(grid.start.go(Direction::EAST)).connects_west()   { return Direction::EAST; };
-        if grid.get_tile(grid.start.go(Direction::SOUTH)).connects_north() { return Direction::SOUTH; };
+        if grid.get_tile(grid.start.go(NORTH)).connects_south() { return NORTH; };
+        if grid.get_tile(grid.start.go(EAST)).connects_west()   { return EAST; };
+        if grid.get_tile(grid.start.go(SOUTH)).connects_north() { return SOUTH; };
         panic!("Start tile {:?} does not connect to any of NORTH, EAST, SOUTH", grid.start);
     }
 
