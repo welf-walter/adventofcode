@@ -442,7 +442,7 @@ impl Enclosing {
         let mut last_edge = State::Unknown;
         for line in self.states.iter_mut() {
             for state in line.iter_mut() {
-                print!("{}{}{} ", state.to_char(), match is_inside { true => 'I', false => 'O' }, match is_horizontal_pipe { true => '-', false => ' ' });
+                //print!("{}{}{} ", state.to_char(), match is_inside { true => 'I', false => 'O' }, match is_horizontal_pipe { true => '-', false => ' ' });
                 if is_horizontal_pipe {
                     match *state {
                         State::LoopHorizontal => { },
@@ -466,7 +466,7 @@ impl Enclosing {
                     }
                 }
             }
-            println!();
+            //println!();
             assert!(!is_inside);
         }
     }
@@ -615,7 +615,7 @@ use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
 
-pub fn part1() {
+pub fn part1and2() {
 
     let file = File::open("data/day10.input").expect("Could not open data/day10.input");
     let reader = BufReader::new(file);
@@ -627,5 +627,10 @@ pub fn part1() {
     assert_eq!(grid.height, 140);
     let the_loop = Loop::find_loop(&grid);
     println!("Day 10, Part 1: Distance of farthest point {}", the_loop.get_distance_of_farthest_point());
+
+    let mut enclosing = Enclosing::new(&grid);
+    enclosing.mark_loop(&the_loop);
+    enclosing.mark_inside();
+    println!("Day 10, Part 2: Number of enclosed tiles is {}", enclosing.count_enclosed_tiles());
 
 }
