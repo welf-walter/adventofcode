@@ -449,7 +449,7 @@ impl Enclosing {
                         State::LoopEdgeNorth |
                         State::LoopEdgeSouth => {
                             is_horizontal_pipe = false;
-                            if *state == last_edge {
+                            if *state != last_edge {
                                 // see "L--7" or "F--J" like "|"
                                 is_inside = !is_inside;
                             }
@@ -514,26 +514,26 @@ fn test_enclosing() {
     enclosing1.mark_loop(&loop1);
     assert_eq!(enclosing1.to_string(),
 "...........
-.+-------+.
-.|+-----+|.
+.T-------T.
+.|T-----T|.
 .||.....||.
 .||.....||.
-.|+-+.+-+|.
+.|^-T.T-^|.
 .|..|.|..|.
-.+--+.+--+.
+.^--^.^--^.
 ...........
 ");
 
     enclosing1.mark_inside();
     assert_eq!(enclosing1.to_string(),
 "OOOOOOOOOOO
-O+-------+O
-O|+-----+|O
+OT-------TO
+O|T-----T|O
 O||OOOOO||O
 O||OOOOO||O
-O|+-+O+-+|O
+O|^-TOT-^|O
 O|II|O|II|O
-O+--+O+--+O
+O^--^O^--^O
 OOOOOOOOOOO
 ");
 }
