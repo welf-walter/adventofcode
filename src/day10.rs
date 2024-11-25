@@ -265,10 +265,10 @@ impl Loop {
     fn find_first_direction(grid:&Grid) -> (/* to: */Direction, /* from: */Direction) {
         assert_eq!(grid.get_tile(grid.start), START_TILE);
 
-        let north = grid.get_tile(grid.start.go(NORTH)).connects_south();
-        let east  = grid.get_tile(grid.start.go(EAST)).connects_west();
-        let south = grid.get_tile(grid.start.go(SOUTH)).connects_north();
-        let west  = grid.get_tile(grid.start.go(WEST)).connects_east();
+        let north = if grid.start.y > 0             { grid.get_tile(grid.start.go(NORTH)).connects_south() } else { false };
+        let east  = if grid.start.x < grid.width-1  { grid.get_tile(grid.start.go(EAST)).connects_west()   } else { false };
+        let south = if grid.start.y < grid.height-1 { grid.get_tile(grid.start.go(SOUTH)).connects_north() } else { false };
+        let west  = if grid.start.x > 0             { grid.get_tile(grid.start.go(WEST)).connects_east()   } else { false };
         match (north, east, south, west) {
             (true,  true,  false, false) => (NORTH, EAST),
             (true,  false, true,  false) => (NORTH, SOUTH),
