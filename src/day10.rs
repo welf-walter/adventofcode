@@ -396,16 +396,29 @@ impl Enclosing {
 
     fn mark_inside(&mut self) {
         let mut is_inside = false;
+        let mut is_horizontal_pipe = false;
         for line in self.states.iter_mut() {
             for state in line.iter_mut() {
-                match *state {
-                    State::Unknown => { *state = if is_inside { State::Inside } else { State::Outside }; },
-                    State::LoopVertical => { is_inside = !is_inside },
-                    State::LoopHorizontal => {},
-                    State::LoopEdge => {},
-                    _ => panic!("Unexpected state {}", *state)
+                print!("{}{}{} ", state.to_char(), match is_inside { true => 'I', false => 'O' }, match is_horizontal_pipe { true => '-', false => ' ' });
+                if is_horizontal_pipe {
+                    match *state {
+                        State::LoopHorizontal => { },
+                        State::LoopEdge => {
+                            is_horizontal_pipe = false;
+                            is_inside = !is_inside;
+                        },
+                        _ => panic!("Unexpected state {} in horizontal line", *state)
+                    }
+                } else {
+                    match *state {
+                        State::Unknown => { *state = if is_inside { State::Inside } else { State::Outside }; },
+                        State::LoopVertical => { is_inside = !is_inside },
+                        State::LoopEdge => { is_horizontal_pipe = !is_horizontal_pipe; },
+                        _ => panic!("Unexpected state {}", *state)
+                    }
                 }
             }
+            println!();
             assert!(!is_inside);
         }
     }
@@ -425,7 +438,7 @@ impl fmt::Display for Enclosing {
 
 #[test]
 fn test_enclosing() {
-    let input1 = 
+    let input1 =
 "...........
 .S-------7.
 .|F-----7|.
