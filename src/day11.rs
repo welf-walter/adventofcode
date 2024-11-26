@@ -1,5 +1,7 @@
 use std::fmt;
 use std::collections::HashSet;
+use std::cmp::min;
+use std::cmp::max;
 
 //////////////////////////////////////////
 /// Galaxy
@@ -70,9 +72,9 @@ impl Space {
     }
 
     fn distance(&self, galaxy1:Galaxy, galaxy2:Galaxy) -> u32 {
-        (galaxy1.x .. galaxy2.x).map( |x| self.size_of_row(x)).sum::<u32>()
+        (min(galaxy1.x, galaxy2.x) .. max(galaxy1.x, galaxy2.x)).map( |x| self.size_of_row(x)).sum::<u32>()
         +
-        (galaxy1.y .. galaxy2.y).map( |y| self.size_of_line(y)).sum::<u32>()
+        (min(galaxy1.y, galaxy2.y) .. max(galaxy1.y, galaxy2.y)).map( |y| self.size_of_line(y)).sum::<u32>()
     }
 
     fn distance_of_all_pairs(&self) -> u32 {
