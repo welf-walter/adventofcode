@@ -6,7 +6,7 @@ use std::collections::HashSet;
 //////////////////////////////////////////
 
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone, Copy)]
 struct Galaxy {
     x:u32,
     y:u32
@@ -60,6 +60,20 @@ impl Space {
         }
         Space { galaxies:galaxies, expanding_lines:empty_lines, expanding_rows: empty_rows }
     }
+
+    fn size_of_line(&self, y:u32) -> u32 {
+        if self.expanding_lines.contains(&y) { 2 } else { 1 }
+    }
+
+    fn size_of_row(&self, x:u32) -> u32 {
+        if self.expanding_rows.contains(&x) { 2 } else { 1 }
+    }
+
+    fn distance(&self, galaxy1:Galaxy, galaxy2:Galaxy) -> u32 {
+        (galaxy1.x .. galaxy2.x).map( |x| self.size_of_row(x)).sum::<u32>()
+        +
+        (galaxy1.y .. galaxy2.y).map( |y| self.size_of_line(y)).sum::<u32>()
+    }
 }
 
 
@@ -94,4 +108,9 @@ fn test_space() {
     let space1 = Space::from_image(input1.split("\n"));
     assert_eq!(space1.expanding_lines, HashSet::from([3, 7]));
     assert_eq!(space1.expanding_rows, HashSet::from([2, 5, 8]));
+
+    assert_eq!(space1.distance(space1.galaxies[5-1], space1.galaxies[9-1]), 9);
+    assert_eq!(space1.distance(space1.galaxies[1-1], space1.galaxies[7-1]), 15);
+    assert_eq!(space1.distance(space1.galaxies[3-1], space1.galaxies[6-1]), 17);
+    assert_eq!(space1.distance(space1.galaxies[8-1], space1.galaxies[9-1]), 5);
 }
