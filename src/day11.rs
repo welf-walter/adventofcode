@@ -63,28 +63,28 @@ impl Space {
         Space { galaxies:galaxies, expanding_lines:empty_lines, expanding_rows: empty_rows }
     }
 
-    fn size_of_line(&self, y:u32) -> u32 {
-        if self.expanding_lines.contains(&y) { 2 } else { 1 }
+    fn size_of_line<const FACTOR:u64>(&self, y:u32) -> u64 {
+        if self.expanding_lines.contains(&y) { FACTOR } else { 1 }
     }
 
-    fn size_of_row(&self, x:u32) -> u32 {
-        if self.expanding_rows.contains(&x) { 2 } else { 1 }
+    fn size_of_row<const FACTOR:u64>(&self, x:u32) -> u64 {
+        if self.expanding_rows.contains(&x) { FACTOR } else { 1 }
     }
 
-    fn distance(&self, galaxy1:Galaxy, galaxy2:Galaxy) -> u32 {
-        (min(galaxy1.x, galaxy2.x) .. max(galaxy1.x, galaxy2.x)).map( |x| self.size_of_row(x)).sum::<u32>()
+    fn distance<const FACTOR:u64>(&self, galaxy1:Galaxy, galaxy2:Galaxy) -> u64 {
+        (min(galaxy1.x, galaxy2.x) .. max(galaxy1.x, galaxy2.x)).map( |x| self.size_of_row::<FACTOR>(x)).sum::<u64>()
         +
-        (min(galaxy1.y, galaxy2.y) .. max(galaxy1.y, galaxy2.y)).map( |y| self.size_of_line(y)).sum::<u32>()
+        (min(galaxy1.y, galaxy2.y) .. max(galaxy1.y, galaxy2.y)).map( |y| self.size_of_line::<FACTOR>(y)).sum::<u64>()
     }
 
-    fn distance_of_all_pairs(&self) -> u32 {
+    fn distance_of_all_pairs<const FACTOR:u64>(&self) -> u64 {
         let n = self.galaxies.len();
         let mut sum = 0;
         for i in 0 .. n {
             let galaxy1 = self.galaxies[i];
             for j in i + 1 .. n {
                 let galaxy2 = self.galaxies[j];
-                let distance = self.distance(galaxy1, galaxy2);
+                let distance = self.distance::<FACTOR>(galaxy1, galaxy2);
                 //println!("{} to {} is {}", i, j, distance);
                 sum += distance;
             }
@@ -126,12 +126,14 @@ fn test_space() {
     assert_eq!(space1.expanding_lines, HashSet::from([3, 7]));
     assert_eq!(space1.expanding_rows, HashSet::from([2, 5, 8]));
 
-    assert_eq!(space1.distance(space1.galaxies[5-1], space1.galaxies[9-1]), 9);
-    assert_eq!(space1.distance(space1.galaxies[1-1], space1.galaxies[7-1]), 15);
-    assert_eq!(space1.distance(space1.galaxies[3-1], space1.galaxies[6-1]), 17);
-    assert_eq!(space1.distance(space1.galaxies[8-1], space1.galaxies[9-1]), 5);
+    assert_eq!(space1.distance::<2>(space1.galaxies[5-1], space1.galaxies[9-1]), 9);
+    assert_eq!(space1.distance::<2>(space1.galaxies[1-1], space1.galaxies[7-1]), 15);
+    assert_eq!(space1.distance::<2>(space1.galaxies[3-1], space1.galaxies[6-1]), 17);
+    assert_eq!(space1.distance::<2>(space1.galaxies[8-1], space1.galaxies[9-1]), 5);
 
-    assert_eq!(space1.distance_of_all_pairs(), 374);
+    assert_eq!(space1.distance_of_all_pairs::<2>(), 374);
+    assert_eq!(space1.distance_of_all_pairs::<10>(), 1030);
+    assert_eq!(space1.distance_of_all_pairs::<100>(), 8410);
 }
 
 //////////////////////////////////////////
@@ -142,7 +144,7 @@ use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
 
-pub fn part1() {
+pub fn part1and2() {
 
     let file = File::open("data/day11.input").expect("Could not open data/day11.input");
     let reader = BufReader::new(file);
@@ -150,6 +152,7 @@ pub fn part1() {
     let lines:Vec<String> = reader.lines().map( |line| line.unwrap() ).collect();
     let space = Space::from_image(lines.iter().map( |line| line.as_str() ));
 
-    println!("Day 11, Part 1: Sum of distance of all pairs is {}", space.distance_of_all_pairs());
+    println!("Day 11, Part 1: Sum of distance of all pairs is {}", space.distance_of_all_pairs::<2>());
+    println!("Day 11, Part 2: Sum of distance of all pairs is {}", space.distance_of_all_pairs::<1000000>());
 
 }

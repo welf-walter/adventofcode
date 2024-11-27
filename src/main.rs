@@ -37,7 +37,7 @@ fn main() {
             8=>day8::part1and2(),
             9=>day9::part1and2(),
             10=>day10::part1and2(),
-            11=>day11::part1(),
+            11=>day11::part1and2(),
             otherday=>println!("Unknown day {}", otherday)
         }
     }
