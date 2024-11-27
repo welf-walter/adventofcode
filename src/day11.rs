@@ -85,7 +85,7 @@ impl Space {
             for j in i + 1 .. n {
                 let galaxy2 = self.galaxies[j];
                 let distance = self.distance(galaxy1, galaxy2);
-                println!("{} to {} is {}", i, j, distance);
+                //println!("{} to {} is {}", i, j, distance);
                 sum += distance;
             }
         }
@@ -132,4 +132,24 @@ fn test_space() {
     assert_eq!(space1.distance(space1.galaxies[8-1], space1.galaxies[9-1]), 5);
 
     assert_eq!(space1.distance_of_all_pairs(), 374);
+}
+
+//////////////////////////////////////////
+/// Productive usage
+//////////////////////////////////////////
+
+use std::fs::File;
+use std::io::BufRead;
+use std::io::BufReader;
+
+pub fn part1() {
+
+    let file = File::open("data/day11.input").expect("Could not open data/day11.input");
+    let reader = BufReader::new(file);
+
+    let lines:Vec<String> = reader.lines().map( |line| line.unwrap() ).collect();
+    let space = Space::from_image(lines.iter().map( |line| line.as_str() ));
+
+    println!("Day 11, Part 1: Sum of distance of all pairs is {}", space.distance_of_all_pairs());
+
 }

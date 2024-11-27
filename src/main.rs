@@ -10,7 +10,7 @@ mod day9;
 mod day10;
 mod day11;
 
-const NUMBER_OF_DAYS : u32 = 10;
+const NUMBER_OF_DAYS : u32 = 11;
 
 use clap::Parser;
 
@@ -37,6 +37,7 @@ fn main() {
             8=>day8::part1and2(),
             9=>day9::part1and2(),
             10=>day10::part1and2(),
+            11=>day11::part1(),
             otherday=>println!("Unknown day {}", otherday)
         }
     }
