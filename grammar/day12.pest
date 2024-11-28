@@ -1,0 +1,15 @@
+// test on: https://pest.rs/#editor
+
+number = { ASCII_DIGIT + }
+
+SPRING = { "#" | "." | "?" }
+
+springs = { SPRING + }
+
+damagedLengths = { number ~ ( "," ~ number ) * }
+
+row = { springs ~ " " ~ damagedLengths }
+
+file = { SOI ~
+         ( row ~ NEWLINE ) + ~
+         EOI }
